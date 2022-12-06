@@ -34,7 +34,7 @@ module Lines
             z = Array{Float64}(undef, size)
             for (i,th) in enumerate(thetas)
                 r = rlc * sin(th)^2
-                ca = spherical2cartesian([r, th, ph])
+                ca = Functions.spherical2cartesian([r, th, ph])
                 x[i] = ca[1]
                 y[i] = ca[2]
                 z[i] = ca[3]
@@ -44,5 +44,19 @@ module Lines
         end
     end
 
+    function calculate_polarcap!(psr; phi_num=100)
+        theta = Functions.theta_max(1, psr)
+        phis = range(0, 2*pi, length=phi_num)
+        x = Array{Float64}(undef, phi_num)
+        y = Array{Float64}(undef, phi_num)
+        z = Array{Float64}(undef, phi_num)
+        for (i,ph) in enumerate(phis)
+            ca = Functions.spherical2cartesian([psr.r, theta, ph])
+            x[i] = ca[1]
+            y[i] = ca[2]
+            z[i] = ca[3]
+        end
+        psr.pc = [x, y, z]
+    end
 
 end  # module Lines

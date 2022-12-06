@@ -25,7 +25,7 @@ https://github.com/JuliaGeometry/CoordinateTransformations.jl/issues/25
 
 Not used  [3, 0, 0] --> [3.0, 0.0, 0.0], but expecting [0.0, 0.0, 3.0] (along z axis - wiki ISO definition, not math wolfram...)
     """
-    function spherical2cartesian2(spherical)
+    function spherical2cartesian2julianotation(spherical)
         return CartesianFromSpherical()(Spherical(spherical[1], spherical[2], spherical[3]))
     end
 

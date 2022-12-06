@@ -7,7 +7,12 @@ module Plot
     #plotlyjs()
     #pyplot()
 
-    function plot3d(psr)
+    # https://discourse.julialang.org/t/determining-xlims/72921/2
+    #xlims(ax::Axis) = @lift ($(ax.finallimits).origin[1], $(ax.finallimits).origin[1] + $(ax.finallimits).widths[1])
+    #ylims(ax::Axis) = @lift ($(ax.finallimits).origin[2], $(ax.finallimits).origin[2] + $(ax.finallimits).widths[2])
+
+
+    function plot3d_test(psr)
         fig = figure()
         ax = fig.add_subplot(111, projection="3d")
         plot_surface(psr.sphere[1], psr.sphere[2], psr.sphere[3], alpha=0.3, color="blue") # why error here?
@@ -28,7 +33,7 @@ module Plot
         #println(psr.lines)
     end
 
-    function plot3d2(psr)
+    function plot3d_test2(psr)
         #gr()
         #pyplot()
         p = surface(psr.sphere[1], psr.sphere[2], psr.sphere[3])
@@ -42,31 +47,178 @@ module Plot
         #savefig("myplot.pdf")
     end
 
-    function plot3d3(psr)
-        flat = collect(Iterators.flatten(psr.lines[1]))
-        max = maximum(flat)
-
-        # TODO fix the arrows!
+    """
+    Some Makie tests here, Nice..
+    """
+    function plot3d_test3(psr)
+        #flat = collect(Iterators.flatten(psr.lines[1]))
+        #max = maximum(flat)
 
         #fig = Figure(; resolution=(600, 480))
         #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
-        #mesh!(ax1, Sphere(Point3f(0), psr.r), color=:blue, transparency=true)
-        fig, ax1, p = mesh(Sphere(Point3f(0), psr.r), color=:blue, transparency=true) # better camera control
 
-        arrows!(ax1, [Point3f(0, 0, 0)], [Point3f(psr.magnetic_axis[1], psr.magnetic_axis[2], psr.magnetic_axis[3])] , color=:red, linewidth =0.03* maximum(psr.magnetic_axis), normalize = false, arrowsize = Vec3f(0.05 * maximum(psr.magnetic_axis), 0.05* maximum(psr.magnetic_axis), 0.1* maximum(psr.magnetic_axis)), transparency=true)
-        arrows!(ax1, [Point3f(0, 0, 0)], [Point3f(psr.rotation_axis[1], psr.rotation_axis[2], psr.rotation_axis[3])] , color=:green, linewidth =0.03* maximum(psr.rotation_axis), normalize = false, arrowsize = Vec3f(0.05 * maximum(psr.rotation_axis), 0.05* maximum(psr.rotation_axis), 0.1* maximum(psr.rotation_axis)), transparency=true)
-        println(size(psr.lines))
+        # plot ns
+        #fig, ax1, p = mesh(Sphere(Point3f(0), psr.r), color=:blue, transparency=true) # better camera control Scene, but zlims does not work
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, psr.r), 0.03), color=:blue, transparency=true) # better camera control (Scene), but zlims does not work
+        #mesh!(ax1, Sphere(Point3f(0), psr.r), color=:blue, transparency=true)
+
+        #arrows!(ax1, [Point3f(0, 0, 0)], [Point3f(psr.magnetic_axis[1], psr.magnetic_axis[2], psr.magnetic_axis[3])] , color=:red, linewidth =0.03* maximum(psr.magnetic_axis), normalize = false, arrowsize = Vec3f(0.05 * maximum(psr.magnetic_axis), 0.05* maximum(psr.magnetic_axis), 0.1* maximum(psr.magnetic_axis)), transparency=true)
+        #arrows!(ax1, [Point3f(0, 0, 0)], [Point3f(psr.rotation_axis[1], psr.rotation_axis[2], psr.rotation_axis[3])] , color=:green, linewidth =0.03* maximum(psr.rotation_axis), normalize = false, arrowsize = Vec3f(0.05 * maximum(psr.rotation_axis), 0.05* maximum(psr.rotation_axis), 0.1* maximum(psr.rotation_axis)), transparency=true)
+
+        # plot polar cap
+        #lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
+
+        # plot field lines
         for l in psr.lines
             lines!(ax1, l[1], l[2], l[3])
         end
+
+        # plot grid
+        if psr.grid != nothing
+            #scatter!(ax1, psr.grid[1], psr.grid[2], psr.grid[3], marker=:diamond, color=:black)
+        end
+
+
+        # plot sparks
+        if psr.sparks != nothing
+            for sp in psr.sparks
+                scatter!(ax1, sp[1], sp[2], sp[3], marker=:xcross, color=:red)
+            end
+        end
+
+        # plot potential
+        if psr.grid != nothing
+            #hm = meshscatter!(ax1, psr.grid[1], psr.grid[2], psr.grid[3]; markersize=1.25, color=psr.potential, transparency=false)
+            scatter!(ax1, psr.grid[1], psr.grid[2], psr.grid[3], marker=:diamond, color=psr.potential)
+            #heatmap!(ax1, psr.grid[1], psr.grid[2], psr.potential, interpolate=false, colorrange=[-155, -135])
+            #contourf!(ax1, psr.grid[1], psr.grid[2], psr.potential)
+            #Colorbar(fig[1, 4], hm, label="values", height=Relative(0.5))
+        end
+
+        #xlims(ax::Axis3) = @lift ($(ax.finallimits).origin[1], $(ax.finallimits).origin[1] + $(ax.finallimits).widths[1])
+        #println(xlims(ax1))
+        #println(ax1.finallimits)
+
+        #println(methodswith(typeof(ax1)))
+
         #xlims!(ax1, -max, max)
         #ylims!(ax1, -max, max)
-        #zlims!(ax1, -max, max)
-        #arrows!(ax1, [Point3f(0, 0, 0)], [Point3f(100000, 0, 0)], linewidth = 1000.05, arrowsize = Vec3f(0.1, 0.1, 0.2), normalize = false, color = :red)
-        #scatter!(ax1, x, y, z; markersize=15)
+        #zlims!(ax1, 9000, 11000)
         display(fig)
     end
 
+
+    """
+    Test sparks generation and other calculations for old grid/spark generation procedure
+    """
+    function plot3d(psr)
+        #flat = collect(Iterators.flatten(psr.lines[1]))
+        #max = maximum(flat)
+
+        #fig = Figure(; resolution=(600, 480))
+        #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
+
+        # plot ns
+        #fig, ax1, p = mesh(Sphere(Point3f(0), psr.r), color=:blue, transparency=true) # better camera control Scene, but zlims does not work
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, psr.r), 0.03), color=:blue, transparency=true) # better camera control (Scene), but zlims does not work
+        #mesh!(ax1, Sphere(Point3f(0), psr.r), color=:blue, transparency=true)
+
+        #arrows!(ax1, [Point3f(0, 0, 0)], [Point3f(psr.magnetic_axis[1], psr.magnetic_axis[2], psr.magnetic_axis[3])] , color=:red, linewidth =0.03* maximum(psr.magnetic_axis), normalize = false, arrowsize = Vec3f(0.05 * maximum(psr.magnetic_axis), 0.05* maximum(psr.magnetic_axis), 0.1* maximum(psr.magnetic_axis)), transparency=true)
+        #arrows!(ax1, [Point3f(0, 0, 0)], [Point3f(psr.rotation_axis[1], psr.rotation_axis[2], psr.rotation_axis[3])] , color=:green, linewidth =0.03* maximum(psr.rotation_axis), normalize = false, arrowsize = Vec3f(0.05 * maximum(psr.rotation_axis), 0.05* maximum(psr.rotation_axis), 0.1* maximum(psr.rotation_axis)), transparency=true)
+
+        # plot polar cap
+        #lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
+
+        # plot field lines
+        for l in psr.lines
+            lines!(ax1, l[1], l[2], l[3])
+        end
+
+        # plot grid
+        if psr.grid != nothing
+            #scatter!(ax1, psr.grid[1], psr.grid[2], psr.grid[3], marker=:diamond, color=:black)
+        end
+
+
+        # plot sparks
+        if psr.sparks != nothing
+            for sp in psr.sparks
+                scatter!(ax1, sp[1], sp[2], sp[3], marker=:xcross, color=:red)
+            end
+        end
+
+        # plot potential
+        if psr.grid != nothing
+            #hm = meshscatter!(ax1, psr.grid[1], psr.grid[2], psr.grid[3]; markersize=1.25, color=psr.potential, transparency=false)
+            scatter!(ax1, psr.grid[1], psr.grid[2], psr.grid[3], marker=:diamond, color=psr.potential)
+            #heatmap!(ax1, psr.grid[1], psr.grid[2], psr.potential, interpolate=false, colorrange=[-155, -135])
+            #contourf!(ax1, psr.grid[1], psr.grid[2], psr.potential)
+            #Colorbar(fig[1, 4], hm, label="values", height=Relative(0.5))
+        end
+
+        #xlims(ax::Axis3) = @lift ($(ax.finallimits).origin[1], $(ax.finallimits).origin[1] + $(ax.finallimits).widths[1])
+        #println(xlims(ax1))
+        #println(ax1.finallimits)
+
+        #println(methodswith(typeof(ax1)))
+
+        #xlims!(ax1, -max, max)
+        #ylims!(ax1, -max, max)
+        #zlims!(ax1, 9000, 11000)
+        display(fig)
+    end
+
+
+    function potential(psr)
+        gr = psr.grid
+        grid_size = size(gr[1])[1]
+
+        # data for potential plotting
+        x = Array{Float64}(undef, grid_size * grid_size)
+        y = Array{Float64}(undef, grid_size * grid_size)
+        z = Array{Float64}(undef, grid_size * grid_size)
+        v = Array{Float64}(undef, grid_size * grid_size)
+        ex = Array{Float64}(undef, grid_size * grid_size)
+        ey = Array{Float64}(undef, grid_size * grid_size)
+
+        ind = 0
+        for i in 1:grid_size
+            for j in 1:grid_size
+                ind += 1
+                x[ind] = gr[1][i]
+                y[ind] = gr[2][j]
+                z[ind] = gr[3][i,j]
+                v[ind] = psr.potential[i, j]
+                ex[ind] = psr.electric_field[1][i, j]
+                ey[ind] = psr.electric_field[2][i, j]
+            end
+        end
+
+
+
+        #fig = Figure(; resolution=(600, 480))
+        #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
+        #fig, ax1, p = mesh(Sphere(Point3f(0, 0, psr.r), 0.03), color=:blue, transparency=true)
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), 0.03), color=:blue, transparency=true)
+
+        # plot polar cap
+        #lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
+
+        # plot sparks
+        if psr.sparks != nothing
+            for (i, j) in psr.sparks
+                #scatter!(ax1, gr[1][i], gr[2][j], gr[3][i, j], marker=:xcross, color=:red)
+            end
+        end
+
+        #ze = zeros(size(z))
+
+        heatmap!(ax1, x, y, v, interpolate=false) #, colorrange=[-155, -135])
+        #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
+        arrows!(ax1, x, y, ex, ey)
+
+        display(fig)
+    end
 
 
 end  # module Plot
