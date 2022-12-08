@@ -65,8 +65,8 @@ module Drift2
         Sparks.create_grid!(psr)
         Sparks.random_sparks!(psr)
         Sparks.calculate_potential!(psr)
-        #Plot.potential3D(psr)
-        Plot.potential2D(psr)
+        Plot.potential3D(psr)
+        #Plot.potential2D(psr)
 
 
         println("Bye")
