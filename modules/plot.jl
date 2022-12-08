@@ -169,7 +169,7 @@ module Plot
     end
 
 
-    function potential(psr)
+    function potential3D(psr)
         gr = psr.grid
         grid_size = size(gr[1])[1]
 
@@ -219,6 +219,48 @@ module Plot
 
         display(fig)
     end
+
+
+    function potential2D(psr)
+        gr = psr.grid
+        grid_size = size(gr[1])[1]
+
+        # data for potential plotting
+        x = Array{Float64}(undef, grid_size * grid_size)
+        y = Array{Float64}(undef, grid_size * grid_size)
+        z = Array{Float64}(undef, grid_size * grid_size)
+        v = Array{Float64}(undef, grid_size * grid_size)
+        ex = Array{Float64}(undef, grid_size * grid_size)
+        ey = Array{Float64}(undef, grid_size * grid_size)
+        vx = Array{Float64}(undef, grid_size * grid_size)
+        vy = Array{Float64}(undef, grid_size * grid_size)
+
+
+
+        ind = 0
+        for i in 1:grid_size
+            for j in 1:grid_size
+                ind += 1
+                x[ind] = gr[1][i]
+                y[ind] = gr[2][j]
+                z[ind] = gr[3][i,j]
+                v[ind] = psr.potential[i, j]
+                ex[ind] = psr.electric_field[1][i, j]
+                ey[ind] = psr.electric_field[2][i, j]
+                vx[ind] = psr.drift_velocity[1][i, j]
+                vy[ind] = psr.drift_velocity[2][i, j]
+            end
+        end
+
+        fig, ax1, p = heatmap(x, y, v, interpolate=false) #, colorrange=[-155, -135])
+        #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
+        #arrows!(x, y, ex, ey, color=:white)
+        arrows!(x, y, vx, vy, color=:white)
+
+        display(fig)
+    end
+
+
 
 
 end  # module Plot

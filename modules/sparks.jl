@@ -1,8 +1,11 @@
 module Sparks
     using LinearAlgebra
     using PyCall
+    using CoupledFields
     include("functions.jl")
+    include("field.jl")
     using .Functions
+    using .Field
 
 
     function create_grid_sph!(psr, size=200)
@@ -175,7 +178,7 @@ module Sparks
 
     # try this https://stackoverflow.com/questions/40338386/calculating-a-3d-gradient-with-unevenly-spaced-points next time?
     """
-    function create_grid!(psr, size=100)
+    function create_grid!(psr, size=50)
         r = psr.r # stellar radius in meters
 
         x_min, x_max = extrema(psr.pc[1])
@@ -183,8 +186,8 @@ module Sparks
         z_min = psr.pc[3][1]
 
 
-        xs = range(x_min, x_max, length=size)
-        ys = range(y_min, y_max, length=size)
+        xs = range(1.1*x_min, 1.1*x_max, length=size)
+        ys = range(1.1*y_min, 1.1*y_max, length=size)
         gr_x = xs
         gr_y = ys
         gr_z = zeros((size, size))
@@ -272,9 +275,9 @@ module Sparks
                         sy = gr[2][jj]
                         sz = gr[3][ii, jj]
                         dist = norm([gr[1][i], gr[2][j], gr[3][i, j]] - [sx, sy, sz])
-                        #vv += v(dist) # nice looking dots (Inf) in the plot
+                        vv += v(dist) # nice looking dots (Inf) in the plot
                         if dist != 0
-                            vv += v(dist)
+                            #vv += v(dist)
                         end
                     end
                 end
@@ -303,13 +306,23 @@ module Sparks
             end
         end
 
-        # python gradient tests
-        #np = pyimport("numpy")
-        #grad_v2 = np.gradient(vs)
-
         # calculate electric field
-        grad_vx = diff(vs, dims=1) # 199x200
-        grad_vy = diff(vs, dims=2) # 200x199
+
+        # python gradient tests
+        # TODO different, better results with python?
+        np = pyimport("numpy")
+        grad_v2 = np.gradient(vs)
+        grad_vx = grad_v2[1]
+        grad_vy = grad_v2[2]
+
+        #grad_vx = diff(vs, dims=1) # 199x200
+        #grad_vy = diff(vs, dims=2) # 200x199
+
+        #println(size(grad))
+        #kernelpars = GaussianKP(X)
+        #gradvecfield([1 -7], X, vs, kernelpars)
+        #return
+        
         ex = Array{Float64}(undef, grid_size, grid_size)
         ey = Array{Float64}(undef, grid_size, grid_size)
 
@@ -318,7 +331,7 @@ module Sparks
                 ex[i, j] = -grad_vx[i, j]
             end
         end
-        # dirty hack
+        # dirty hacks below
         for j in 1:grid_size
             ex[grid_size, j] = -grad_vx[grid_size-1, j]
         end
@@ -332,9 +345,26 @@ module Sparks
             ey[j, grid_size] = -grad_vy[j, grid_size-1]
         end
 
+        # calculate drift velocity
+        vdx = Array{Float64}(undef, grid_size, grid_size)
+        vdy = Array{Float64}(undef, grid_size, grid_size)
+        for i in 1:grid_size
+            for j in 1:grid_size
+                B = Field.bd(gr[1][i], gr[1][j], psr)
+                E = [ex[i, j], ey[i, j], 0]
+                #println(B)
+                #println(E)
+                v = cross(E, B)
+                vdx[i, j] = v[1]
+                vdy[i, j] = v[2]
+            end
+        end
+
+
         #println(typeof(grad_v2))
         psr.potential = vs
         psr.electric_field = [ex, ey]
+        psr.drift_velocity = [vdx, vdy]
     end
 
 
