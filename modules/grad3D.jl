@@ -19,7 +19,12 @@ println(typeof(Y))
 #println(Y)
 """
 
+println(size(X))
+println(size(Y[:,1:1]))
+
 kernelpars = GaussianKP(X)
+# kernelpars = PolynomialKP(X) # does not work LoadError: DomainError with -0.7307803296887274
+
 ∇g = gradvecfield([0.5 -7], X, Y[:,1:1], kernelpars)
 println(size(∇g[1]))
 

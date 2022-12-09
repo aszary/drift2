@@ -56,17 +56,17 @@ module Sparks
     end
 
     """
-    simple square grid, not applicable for gradient calculation
+    simple square grid, not applicable for gradient calculation? or..
     """
-    function create_grid_square!(psr, size=200)
+    function create_grid_square!(psr, size_=100)
         r = psr.r # stellar radius in meters
         x_min, x_max = extrema(psr.pc[1])
         y_min, y_max = extrema(psr.pc[2])
         z_min = psr.pc[3][1]
 
         theta_max = Functions.theta_max(1, psr)
-        xs = range(x_min, x_max, length=size)
-        ys = range(y_min, y_max, length=size)
+        xs = range(x_min, x_max, length=size_)
+        ys = range(y_min, y_max, length=size_)
         x = []
         y = []
         z = []
@@ -85,8 +85,12 @@ module Sparks
         y = convert(Array{Float64,1}, y)
         z = convert(Array{Float64,1}, z)
         psr.grid = [x, y, z]
+        psr.grid2 = reduce(hcat, [x, y, z]) # used to calculate gradient... https://stackoverflow.com/questions/70201776/converting-julia-nested-list-to-multidimensional-array
+        #println(psr.grid[2][10])
+        #println(psr.grid2[10, 2])
+        #println(typeof(psr.grid2))
+        #println(size(psr.grid2))
     end
-
 
 
     """
@@ -167,6 +171,13 @@ module Sparks
             #println(vv)
         end
 
+        # gradient does not work!
+        #kernelpars = GaussianKP(psr.grid2) # does not work (grid too big)
+        #kernelpars = PolynomialKP(psr.grid2) # does not work (grid too big)
+        #gradvecfield([0.5 -7], X, Y[:,1:1], kernelpars)
+        #grad_v = gradvecfield([0.5 -7], psr.grid2, vs[:,1:1], kernelpars)
+        #println(size(grad_v))
+
         psr.potential = convert(Array{Float64,1}, vs)
 
     end
@@ -184,7 +195,6 @@ module Sparks
         x_min, x_max = extrema(psr.pc[1])
         y_min, y_max = extrema(psr.pc[2])
         z_min = psr.pc[3][1]
-
 
         xs = range(1.1*x_min, 1.1*x_max, length=size)
         ys = range(1.1*y_min, 1.1*y_max, length=size)
@@ -214,7 +224,7 @@ module Sparks
 - min_dist: minimum distant in meters
 
     """
-    function random_sparks!(psr; min_dist=30, trials=1000)
+    function random_sparks_grid!(psr; min_dist=30, trials=1000)
         gr = psr.grid
         grid_size = size(gr[1])[1]
         sp = []
@@ -254,6 +264,9 @@ module Sparks
     end
 
 
+    """
+    Calculates electric potential, electric field and drift velocity...
+    """
     function calculate_potential!(psr)
         gr = psr.grid
         grid_size = size(gr[1])[1]
@@ -275,9 +288,9 @@ module Sparks
                         sy = gr[2][jj]
                         sz = gr[3][ii, jj]
                         dist = norm([gr[1][i], gr[2][j], gr[3][i, j]] - [sx, sy, sz])
-                        vv += v(dist) # nice looking dots (Inf) in the plot
+                        #vv += v(dist) # nice looking dots (Inf) in the plot, but no
                         if dist != 0
-                            #vv += v(dist)
+                            vv += v(dist)
                         end
                     end
                 end
@@ -307,24 +320,13 @@ module Sparks
         end
 
         # calculate electric field
-
-        # python gradient tests
-        # TODO different, better results with python?
-        np = pyimport("numpy")
-        grad_v2 = np.gradient(vs)
-        grad_vx = grad_v2[1]
-        grad_vy = grad_v2[2]
-
-        #grad_vx = diff(vs, dims=1) # 199x200
-        #grad_vy = diff(vs, dims=2) # 200x199
-
-        #println(size(grad))
-        #kernelpars = GaussianKP(X)
-        #gradvecfield([1 -7], X, vs, kernelpars)
-        #return
-        
         ex = Array{Float64}(undef, grid_size, grid_size)
         ey = Array{Float64}(undef, grid_size, grid_size)
+
+        # julia using diff (bad results!)
+        """
+        grad_vx = diff(vs, dims=1) # 199x200
+        grad_vy = diff(vs, dims=2) # 200x199
 
         for i in 1:grid_size-1
             for j in 1:grid_size
@@ -344,6 +346,16 @@ module Sparks
         for j in 1:grid_size
             ey[j, grid_size] = -grad_vy[j, grid_size-1]
         end
+        """
+
+        # python gradient calculation
+        # TODO find julia solution
+        np = pyimport("numpy")
+        grad_v2 = np.gradient(vs)
+        grad_vx = grad_v2[1]
+        grad_vy = grad_v2[2]
+        ex = - grad_vx
+        ey =  - grad_vy
 
         # calculate drift velocity
         vdx = Array{Float64}(undef, grid_size, grid_size)
@@ -366,6 +378,69 @@ module Sparks
         psr.electric_field = [ex, ey]
         psr.drift_velocity = [vdx, vdy]
     end
+
+
+
+    """
+
+    Random sparks at the polar cap (grids will be generated later!)
+
+    # Arguments
+
+    - min_dist: minimum distant in meters
+
+    """
+    function random_sparks!(psr; min_dist=30, trials=1000)
+        sp = []
+
+        # maximum theta
+        thm = asin((psr.r_pc - min_dist) / psr.r)
+        for i in 1:trials
+            phi = rand() * 2pi
+            theta = rand() * thm
+            # println(phi, " ", theta)
+            # TODO start here
+        end
+        return
+
+        gr = psr.grid
+        grid_size = size(gr[1])[1]
+        for i in 1:trials
+            ii = rand(1:grid_size)
+            jj = rand(1:grid_size)
+            x = gr[1][ii]
+            y = gr[2][jj]
+            z = gr[3][ii, jj]
+            if !([ii, jj] in sp) && (z !=0) # not in sparks # remember to skip z=0
+                md = 2 * min_dist
+                # check distance between sparks
+                for si in sp
+                    sx = gr[1][si[1]]
+                    sy = gr[2][si[2]]
+                    sz = gr[3][si[1], si[2]]
+                    dist = norm([sx, sy, sz] - [x, y, z])
+                    #println(dist)
+                    if dist < md
+                        md = dist
+                    end
+                end
+                for i in 1:size(psr.pc[1])[1]
+                    dist = norm([x, y, z] - [psr.pc[1][i], psr.pc[2][i], psr.pc[3][i]])
+                    if dist < md
+                        md = dist
+                    end
+                end
+                if md > min_dist
+                    push!(sp, [ii, jj])
+                end
+            end
+        end
+        #psr.sparks = convert(Array{Float64,1}, sp)
+        psr.sparks = sp
+        println("Number of sparks added: ", size(sp)[1])
+    end
+
+
 
 
 
