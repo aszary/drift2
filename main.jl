@@ -23,13 +23,14 @@ module Drift2
         grid2
         sparks
         potential
+        pot_minmax
         electric_field
         drift_velocity
         function Pulsar(p, r)
             r_pc = rdp(p, r)
             r_lc = rlc(p)
             #sphere = generate_sphere(r) # GLMakie is the King :D
-            return new(p, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], [], nothing, nothing, nothing, nothing, nothing, nothing, nothing)
+            return new(p, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], [], nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing)
         end
     end
 
@@ -49,7 +50,7 @@ module Drift2
     end
 
 
-    function sparks_grid()
+    function sparks_fullgrid()
         # initialize pulsar instance
         psr = Pulsar(1, 10e3) # period 1 s, radius 10 km
 
@@ -66,12 +67,10 @@ module Drift2
 
 
 
-
-
     function main()
 
         #gradient3D_old()
-        #sparks_grid()
+        #sparks_fullgrid()
         #return
 
         # initialize pulsar instance
@@ -79,8 +78,10 @@ module Drift2
 
         #Lines.generate_dipole!(psr)
         Lines.calculate_polarcap!(psr)
-
         Sparks.random_sparks!(psr)
+        Sparks.create_grids!(psr)
+        Sparks.calculate_potentials!(psr)
+        Plot.sparks(psr)
 
 
         println("Bye")

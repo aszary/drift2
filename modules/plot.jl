@@ -194,8 +194,6 @@ module Plot
             end
         end
 
-
-
         #fig = Figure(; resolution=(600, 480))
         #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
         #fig, ax1, p = mesh(Sphere(Point3f(0, 0, psr.r), 0.03), color=:blue, transparency=true)
@@ -235,8 +233,6 @@ module Plot
         vx = Array{Float64}(undef, grid_size * grid_size)
         vy = Array{Float64}(undef, grid_size * grid_size)
 
-
-
         ind = 0
         for i in 1:grid_size
             for j in 1:grid_size
@@ -260,6 +256,70 @@ module Plot
         display(fig)
     end
 
+    """
+    Converts grid_x[size], grid_y[size], grid_z[size, size] to x[size*size], y[size*size], z[size*size]
+    gets potential, electric field and drift velocity
+    """
+    function get_gridxyz(gr, potential, electric_field, drift_velocity)
+        # TODO add potentials poltting
+        grid_size = size(gr[1])[1]
+
+        x = Array{Float64}(undef, grid_size * grid_size)
+        y = Array{Float64}(undef, grid_size * grid_size)
+        z = Array{Float64}(undef, grid_size * grid_size)
+        v = Array{Float64}(undef, grid_size * grid_size)
+        ex = Array{Float64}(undef, grid_size * grid_size)
+        ey = Array{Float64}(undef, grid_size * grid_size)
+        vx = Array{Float64}(undef, grid_size * grid_size)
+        vy = Array{Float64}(undef, grid_size * grid_size)
+
+        ind = 0
+        for i in 1:grid_size
+            for j in 1:grid_size
+                ind += 1
+                x[ind] = gr[1][i]
+                y[ind] = gr[2][j]
+                z[ind] = gr[3][i,j]
+                v[ind] = potential[i, j]
+                ex[ind] = electric_field[1][i, j]
+                ey[ind] = electric_field[2][i, j]
+                vx[ind] = drift_velocity[1][i, j]
+                vy[ind] = drift_velocity[2][i, j]
+            end
+        end
+        return (x, y, z, v, ex, ey, vx, vy)
+    end
+
+
+    function sparks(psr)
+
+        #fig = Figure(; resolution=(600, 480))
+        #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, psr.r), 0.03), color=:blue, transparency=true)
+        #fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), 0.03), color=:blue, transparency=true)
+
+        # plot polar cap
+        lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
+
+        # plot sparks
+        if psr.sparks != nothing
+            for s in psr.sparks
+                scatter!(ax1, s[1], s[2], s[3], marker=:xcross, color=:red)
+            end
+        end
+
+        # plot grids
+        for (i, gr) in enumerate(psr.grid)
+            x, y, z, v, ex, ey, vx, vy = get_gridxyz(gr, psr.potential[i], psr.electric_field[i], psr.drift_velocity[i])
+            scatter!(ax1, x, y, z, marker=:diamond, color=v, colorrange=(psr.pot_minmax[1], psr.pot_minmax[2]))
+            arrows!(ax1, x, y, z, vx, vy, zeros(length(vx)), color=:black) # drift velocity
+            #arrows!(ax1, )
+        end
+
+        display(fig)
+
+
+    end
 
 
 

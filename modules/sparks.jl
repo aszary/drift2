@@ -372,7 +372,6 @@ module Sparks
             end
         end
 
-
         #println(typeof(grad_v2))
         psr.potential = vs
         psr.electric_field = [ex, ey]
@@ -394,54 +393,172 @@ module Sparks
         sp = []
 
         # maximum theta
-        thm = asin((psr.r_pc - min_dist) / psr.r)
+        thm = asin((psr.r_pc - min_dist) / psr.r) # plus distance from pc boundry condition
         for i in 1:trials
             phi = rand() * 2pi
             theta = rand() * thm
-            # println(phi, " ", theta)
-            # TODO start here
-        end
-        return
-
-        gr = psr.grid
-        grid_size = size(gr[1])[1]
-        for i in 1:trials
-            ii = rand(1:grid_size)
-            jj = rand(1:grid_size)
-            x = gr[1][ii]
-            y = gr[2][jj]
-            z = gr[3][ii, jj]
-            if !([ii, jj] in sp) && (z !=0) # not in sparks # remember to skip z=0
-                md = 2 * min_dist
-                # check distance between sparks
-                for si in sp
-                    sx = gr[1][si[1]]
-                    sy = gr[2][si[2]]
-                    sz = gr[3][si[1], si[2]]
-                    dist = norm([sx, sy, sz] - [x, y, z])
-                    #println(dist)
-                    if dist < md
-                        md = dist
-                    end
-                end
-                for i in 1:size(psr.pc[1])[1]
-                    dist = norm([x, y, z] - [psr.pc[1][i], psr.pc[2][i], psr.pc[3][i]])
-                    if dist < md
-                        md = dist
-                    end
-                end
-                if md > min_dist
-                    push!(sp, [ii, jj])
+            car = Functions.spherical2cartesian([psr.r, theta, phi])
+            md = 2 * min_dist
+            for s in sp
+                dist = norm([s[1], s[2], s[3]] - [car[1], car[2], car[3]])
+                if dist < md
+                    md = dist
                 end
             end
+            if md > min_dist
+                push!(sp, [car[1], car[2], car[3]])
+            end
         end
-        #psr.sparks = convert(Array{Float64,1}, sp)
         psr.sparks = sp
         println("Number of sparks added: ", size(sp)[1])
     end
 
 
 
+    """
+    Creates grids around sparks to calculate gradient...
 
+    # Arguments
+    - prec: grid precision in meters
+    - grid_size: odd number for proper spark calculation, even number for proper region calculation
+    """
+    function create_grids!(psr, prec=3, grid_size=5)
+
+        if psr.sparks == nothing
+            println("Run random_sparks! frirst..")
+            return
+        end
+
+        sp = psr.sparks
+        gr = []
+
+        for s in sp
+            gr_x = range(s[1] - prec*2, s[1]+prec*2, length=grid_size)
+            gr_y = range(s[2] - prec*2, s[2]+prec*2, length=grid_size)
+            gr_z = zeros((grid_size, grid_size))
+            for (i, x) in enumerate(gr_x)
+                for (j, y) in enumerate(gr_y)
+                    z = sqrt(psr.r^2 - x^2 - y^2)
+                    gr_z[i, j] = z
+                end
+            end
+            push!(gr, [gr_x, gr_y, gr_z])
+        end
+        psr.grid = gr
+    end
+
+
+
+    """
+    Calculates electric potential, electric field and drift velocity for grids around sparks
+    """
+    function calculate_potentials!(psr)
+        grids = psr.grid
+        grids_num = size(grids)[1]
+        sp = psr.sparks
+        spark_num = size(sp)[1]
+
+        potentials = []
+        electric_fields = []
+        drift_velocities = []
+
+        psr.pot_minmax = [1e50, -1e50]
+
+        for ii in 1:grids_num
+            gr = grids[ii]
+            grid_size = size(gr[1])[1]
+
+            vs = Array{Float64}(undef, grid_size, grid_size)
+
+            for i in 1:grid_size
+                for j in 1:grid_size
+                    vv = 0
+                    for k in 1:spark_num
+                        sx = sp[k][1]
+                        sy = sp[k][2]
+                        sz = sp[k][3]
+                        dist = norm([gr[1][i], gr[2][j], gr[3][i, j]] - [sx, sy, sz])
+                        #vv += v(dist) # nice looking dots (Inf) in the plot, but no
+                        if dist != 0
+                            vv += v(dist)
+                        end
+                    end
+                    if vv < psr.pot_minmax[1]
+                        psr.pot_minmax[1] = vv
+                    end
+                    if vv > psr.pot_minmax[2]
+                        psr.pot_minmax[2] = vv
+                    end
+                    vs[i, j] = vv
+                    #println(ii, " ", i, " ", j, " ", vs[i, j])
+                end
+            end
+            push!(potentials, vs)
+
+            # calculate electric field
+            ex = Array{Float64}(undef, grid_size, grid_size)
+            ey = Array{Float64}(undef, grid_size, grid_size)
+
+            # python gradient calculation
+            # TODO find julia solution
+            np = pyimport("numpy")
+            grad_v2 = np.gradient(vs)
+            grad_vx = grad_v2[1]
+            grad_vy = grad_v2[2]
+            ex = - grad_vx
+            ey = - grad_vy
+
+            # calculate drift velocity
+            vdx = Array{Float64}(undef, grid_size, grid_size)
+            vdy = Array{Float64}(undef, grid_size, grid_size)
+            for i in 1:grid_size
+                for j in 1:grid_size
+                    B = Field.bd(gr[1][i], gr[1][j], psr)
+                    E = [ex[i, j], ey[i, j], 0]
+                    #println(B)
+                    #println(E)
+                    v = cross(E, B)
+                    vdx[i, j] = v[1]
+                    vdy[i, j] = v[2]
+                end
+            end
+            push!(electric_fields, [ex, ey])
+            push!(drift_velocities, [vdx, vdy])
+        end
+
+        """
+        # calculate electric field
+        ex = Array{Float64}(undef, grid_size, grid_size)
+        ey = Array{Float64}(undef, grid_size, grid_size)
+
+        # python gradient calculation
+        # TODO find julia solution
+        np = pyimport("numpy")
+        grad_v2 = np.gradient(vs)
+        grad_vx = grad_v2[1]
+        grad_vy = grad_v2[2]
+        ex = - grad_vx
+        ey =  - grad_vy
+
+        # calculate drift velocity
+        vdx = Array{Float64}(undef, grid_size, grid_size)
+        vdy = Array{Float64}(undef, grid_size, grid_size)
+        for i in 1:grid_size
+            for j in 1:grid_size
+                B = Field.bd(gr[1][i], gr[1][j], psr)
+                E = [ex[i, j], ey[i, j], 0]
+                #println(B)
+                #println(E)
+                v = cross(E, B)
+                vdx[i, j] = v[1]
+                vdy[i, j] = v[2]
+            end
+        end
+        """
+        #println(typeof(grad_v2))
+        psr.potential = potentials
+        psr.electric_field = electric_fields
+        psr.drift_velocity = drift_velocities
+    end
 
 end
