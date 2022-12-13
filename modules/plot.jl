@@ -315,11 +315,38 @@ module Plot
             arrows!(ax1, x, y, z, vx, vy, zeros(length(vx)), color=:black) # drift velocity
             #arrows!(ax1, )
         end
+        display(fig)
+    end
+
+
+    function simulation(psr)
+
+        #fig = Figure(; resolution=(600, 480))
+        #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, psr.r), 0.03), color=:blue, transparency=true)
+        #fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), 0.03), color=:blue, transparency=true)
+
+        # plot polar cap
+        lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
+
+        for sp in psr.locations[1]
+            scatter!(ax1, sp[1], sp[2], sp[3], marker=:diamond)
+        end
+
+        for (i, sv) in enumerate(psr.sparks_velocity)
+            x = psr.locations[1][i][1]
+            y = psr.locations[1][i][2]
+            z = psr.locations[1][i][3]
+            #println(x, " ",  y, " ", z)
+            #println(sv[1], " ",  sv[2], " ", z)
+            arrows!(ax1, [x], [y], [z], [sv[1]], [sv[2]], [0], color=:red) # drift velocity
+        end
+
+
 
         display(fig)
-
-
     end
+
 
 
 

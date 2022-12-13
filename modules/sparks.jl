@@ -461,6 +461,7 @@ module Sparks
         potentials = []
         electric_fields = []
         drift_velocities = []
+        sparks_velocities = []
 
         psr.pot_minmax = [1e50, -1e50]
 
@@ -522,6 +523,8 @@ module Sparks
                     vdy[i, j] = v[2]
                 end
             end
+            ind = convert(Int, ceil(grid_size / 2)) # works for odd grid sizes
+            push!(sparks_velocities, [vdx[ind, ind], vdy[ind, ind]])
             push!(electric_fields, [ex, ey])
             push!(drift_velocities, [vdx, vdy])
         end
@@ -559,6 +562,15 @@ module Sparks
         psr.potential = potentials
         psr.electric_field = electric_fields
         psr.drift_velocity = drift_velocities
+        push!(psr.locations, psr.sparks)
+        psr.sparks_velocity = sparks_velocities
+        push!(psr.sparks_velocities, sparks_velocities)
+    end
+
+
+    function simulate()
+
+
     end
 
 end

@@ -21,7 +21,10 @@ module Drift2
         pc # polar cap boundry x, y, z
         grid
         grid2
-        sparks
+        sparks # single sparks locations
+        locations # for the simulation
+        sparks_velocity # single spark valocity
+        sparks_velocities # for the simulation
         potential
         pot_minmax
         electric_field
@@ -30,7 +33,7 @@ module Drift2
             r_pc = rdp(p, r)
             r_lc = rlc(p)
             #sphere = generate_sphere(r) # GLMakie is the King :D
-            return new(p, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], [], nothing, nothing, nothing, nothing, nothing, nothing, nothing, nothing)
+            return new(p, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], [], nothing, nothing, nothing, nothing, [], nothing, [], nothing, nothing, nothing, nothing)
         end
     end
 
@@ -81,7 +84,8 @@ module Drift2
         Sparks.random_sparks!(psr)
         Sparks.create_grids!(psr)
         Sparks.calculate_potentials!(psr)
-        Plot.sparks(psr)
+        #Plot.sparks(psr)
+        Plot.simulation(psr)
 
 
         println("Bye")
