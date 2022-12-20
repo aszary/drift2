@@ -352,9 +352,10 @@ module Plot
         #display(fig)
 
         # get last file
-        files = sort(glob("sparks_*", "output"))
-        num = parse(Int, split(split(split(files[end], "/")[end], "_")[end], ".")[1]) # wow
-        num += 1
+        files = glob("sparks_*", "output")
+        files = replace.(files, "output/sparks_"=>"", ".mp4"=>"")
+        nums = parse.(Int, files)
+        num = maximum(nums) + 1
 
         # animation
         record(fig, "output/sparks_$num.mp4", 1:length(psr.locations), framerate=60) do i

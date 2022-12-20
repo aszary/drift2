@@ -416,6 +416,81 @@ module Sparks
 
 
     """
+
+    Initiate sparks at the polar cap (grids will be generated later!)
+    Same distance between sparks at the tracks
+
+    # Arguments
+
+    - rs: list of tracks radius
+    - num: number of sparks at the inner track
+
+    """
+    function init_sparks1!(psr; rfs=[0.1, 0.4, 0.7], num=3)
+        sp = []
+
+        c1 = nothing
+        for (i, rf) in enumerate(rfs)
+            r = psr.r_pc * rf
+            thm = asin(r / psr.r)
+            if i == 1
+                c1 = 2 * pi * r
+                for phi in range(0, 2pi, length=num+1)[1:num] # really?
+                    car = Functions.spherical2cartesian([psr.r, thm, phi])
+                    push!(sp, [car[1], car[2], car[3]])
+                    #println(phi)
+                end
+            else
+                # calculate track cicumference to adjust track radius
+                ci = 2 * pi * r
+                num_new = convert(Int, ceil(ci / c1) * num)
+                ci_new = ceil(ci / c1) * c1
+                r_new = ci_new / (2 * pi)
+                thm = asin(r_new / psr.r)
+                for phi in range(0, 2pi, length=num_new+1)[1:num_new] # really?
+                    car = Functions.spherical2cartesian([psr.r, thm, phi])
+                    push!(sp, [car[1], car[2], car[3]])
+                    #println(phi)
+                end
+            end
+            #println("$r $c1")
+        end
+        psr.sparks = sp
+        println("Number of sparks added: ", size(sp)[1])
+    end
+
+
+    """
+
+    Initiate sparks at the polar cap (grids will be generated later!)
+    Same number of sparks at all tracks
+
+    # Arguments
+
+    - rs: list of tracks radius
+    - num: number of sparks at the inner track
+
+    """
+    function init_sparks2!(psr; rfs=[0.3, 0.5], num=3)
+        sp = []
+
+        for (i, rf) in enumerate(rfs)
+            r = psr.r_pc * rf
+            thm = asin(r / psr.r)
+            for phi in range(0, 2pi, length=num+1)[1:num] # really?
+                car = Functions.spherical2cartesian([psr.r, thm, phi])
+                push!(sp, [car[1], car[2], car[3]])
+                #println(phi)
+            end
+            #println("$r $c1")
+        end
+        psr.sparks = sp
+        println("Number of sparks added: ", size(sp)[1])
+    end
+
+
+
+    """
     Creates grids around sparks to calculate gradient...
 
     # Arguments
@@ -538,7 +613,7 @@ module Sparks
     end
 
 
-    function simulate!(psr, steps=100, speedup=1)
+    function simulate!(psr, steps=10000, speedup=1)
         sp = psr.sparks
 
         for j in 1:steps
