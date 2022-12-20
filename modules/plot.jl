@@ -1,6 +1,9 @@
 module Plot
+    using Glob
     using GLMakie
-    using GeometryBasics
+    #using GeometryBasics # no more Point3f?
+    #using Meshes
+    #import Meshes.Sphere
     GLMakie.activate!()
     #using PyPlot
     #using Plots
@@ -319,7 +322,54 @@ module Plot
     end
 
 
-    function simulation(psr)
+    function simulation2d(psr)
+
+        # plot polar cap
+        fig, ax, pl = lines(psr.pc[1], psr.pc[2])
+        #println(fieldnames(typeof(fig))) # HERE useful!
+        ax.aspect = DataAspect()
+
+        observables = []
+
+        for (i, sp) in enumerate(psr.locations[1])
+            #println(i)
+            o1 = Observable(sp[1])
+            o2 = Observable(sp[2])
+            push!(observables, [o1, o2])
+            scatter!(o1, o2, marker=:diamond) #, color=colors[i])
+        end
+
+        #=
+        # plot grids
+        for (i, gr) in enumerate(psr.grid)
+            x, y, z, v, ex, ey, vx, vy = get_gridxyz(gr, psr.potential[i], psr.electric_field[i], psr.drift_velocity[i])
+            scatter!(x, y, marker=:diamond, color=v, colorrange=(psr.pot_minmax[1], psr.pot_minmax[2]))
+            arrows!(x, y, vx, vy, color=:black) # drift velocity
+            #arrows!(ax1, )
+        end
+        =#
+
+        #display(fig)
+
+        # get last file
+        files = sort(glob("sparks_*", "output"))
+        num = parse(Int, split(split(split(files[end], "/")[end], "_")[end], ".")[1]) # wow
+        num += 1
+
+        # animation
+        record(fig, "output/sparks_$num.mp4", 1:length(psr.locations), framerate=60) do i
+            loc = psr.locations[i]
+            for (j, obs) in  enumerate(observables)
+                obs[1][] = loc[j][1]
+                obs[2][] = loc[j][2]
+            end
+        end
+
+    end
+
+
+
+    function simulation3d(psr)
 
         #fig = Figure(; resolution=(600, 480))
         #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
@@ -329,10 +379,15 @@ module Plot
         # plot polar cap
         lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
 
-        for sp in psr.locations[1]
-            scatter!(ax1, sp[1], sp[2], sp[3], marker=:diamond)
+        observables = []
+        for (i, sp) in enumerate(psr.locations[1])
+            #println(i)
+            o1 = Observable(sp[1])
+            o2 = Observable(sp[2])
+            o3 = Observable(sp[3])
+            push!(observables, [o1, o2, o3])
+            scatter!(ax1, o1, o2, o3, marker=:diamond, color=:black)
         end
-
         for (i, sv) in enumerate(psr.sparks_velocity)
             x = psr.locations[1][i][1]
             y = psr.locations[1][i][2]
@@ -343,8 +398,27 @@ module Plot
         end
 
 
+        # plot grids
+        for (i, gr) in enumerate(psr.grid)
+            x, y, z, v, ex, ey, vx, vy = get_gridxyz(gr, psr.potential[i], psr.electric_field[i], psr.drift_velocity[i])
+            scatter!(ax1, x, y, z, marker=:diamond, color=v, colorrange=(psr.pot_minmax[1], psr.pot_minmax[2]))
+            arrows!(ax1, x, y, z, vx, vy, zeros(length(vx)), color=:black) # drift velocity
+            #arrows!(ax1, )
+        end
 
         display(fig)
+
+        # animation
+        for (i,loc) in enumerate(psr.locations)
+            for (j, obs) in  enumerate(observables)
+                obs[1][] = loc[j][1]
+                obs[2][] = loc[j][2]
+                obs[3][] = loc[j][3]
+            end
+
+            println(i)
+            sleep(0.01)
+        end
     end
 
 

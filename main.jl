@@ -85,10 +85,14 @@ module Drift2
         Sparks.create_grids!(psr)
         Sparks.calculate_potentials!(psr)
         #Plot.sparks(psr)
-        Plot.simulation(psr)
-
+        Sparks.simulate!(psr)
+        #println(size(psr.locations))
+        #println(psr.locations[1][1][1], " ", psr.locations[1][1][2])
+        #Plot.simulation2d(psr)
+        Plot.simulation3d(psr)
 
         println("Bye")
+        #return psr
     end
 end
 

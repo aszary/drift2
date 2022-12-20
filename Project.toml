@@ -1,0 +1,7 @@
+[deps]
+CoupledFields = "7ad07ef1-bdf2-5661-9d2b-286fd4296dac"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+Glob = "c27321d9-0574-5035-807b-f59d2c89b15c"
+PhysicalConstants = "5ad8b20f-a522-5ce9-bfc9-ddf1d5bda6ab"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"

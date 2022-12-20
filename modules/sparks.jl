@@ -422,7 +422,7 @@ module Sparks
     - prec: grid precision in meters
     - grid_size: odd number for proper spark calculation, even number for proper region calculation
     """
-    function create_grids!(psr, prec=3, grid_size=5)
+    function create_grids!(psr, prec=0.3, grid_size=5)
 
         if psr.sparks == nothing
             println("Run random_sparks! frirst..")
@@ -503,9 +503,9 @@ module Sparks
             # python gradient calculation
             # TODO find julia solution
             np = pyimport("numpy")
-            grad_v2 = np.gradient(vs)
-            grad_vx = grad_v2[1]
-            grad_vy = grad_v2[2]
+            grad_v = np.gradient(vs)
+            grad_vx = grad_v[1]
+            grad_vy = grad_v[2]
             ex = - grad_vx
             ey = - grad_vy
 
@@ -528,48 +528,43 @@ module Sparks
             push!(electric_fields, [ex, ey])
             push!(drift_velocities, [vdx, vdy])
         end
-
-        """
-        # calculate electric field
-        ex = Array{Float64}(undef, grid_size, grid_size)
-        ey = Array{Float64}(undef, grid_size, grid_size)
-
-        # python gradient calculation
-        # TODO find julia solution
-        np = pyimport("numpy")
-        grad_v2 = np.gradient(vs)
-        grad_vx = grad_v2[1]
-        grad_vy = grad_v2[2]
-        ex = - grad_vx
-        ey =  - grad_vy
-
-        # calculate drift velocity
-        vdx = Array{Float64}(undef, grid_size, grid_size)
-        vdy = Array{Float64}(undef, grid_size, grid_size)
-        for i in 1:grid_size
-            for j in 1:grid_size
-                B = Field.bd(gr[1][i], gr[1][j], psr)
-                E = [ex[i, j], ey[i, j], 0]
-                #println(B)
-                #println(E)
-                v = cross(E, B)
-                vdx[i, j] = v[1]
-                vdy[i, j] = v[2]
-            end
-        end
-        """
         #println(typeof(grad_v2))
         psr.potential = potentials
         psr.electric_field = electric_fields
         psr.drift_velocity = drift_velocities
-        push!(psr.locations, psr.sparks)
+        push!(psr.locations, deepcopy(psr.sparks))
         psr.sparks_velocity = sparks_velocities
-        push!(psr.sparks_velocities, sparks_velocities)
+        push!(psr.sparks_velocities, deepcopy(sparks_velocities))
     end
 
 
-    function simulate()
+    function simulate!(psr, steps=100, speedup=1)
+        sp = psr.sparks
 
+        for j in 1:steps
+            sv = psr.sparks_velocity
+            for (i,s) in enumerate(sp)
+                """
+                # prevent expanding hack! - not physical! NOPE!!!
+                x1 = s[1]
+                x2 = s[1] + sv[i][1] * speedup
+                y1 = s[2]
+                y2 = s[2] + sv[i][2] * speedup
+                #println(norm([sv[i][1], sv[i][1]]))
+                r = norm([x1, y1])
+                phi = angle(x2 + y2*im)
+                x2 = r * cos(phi)
+                y2 = r * sin(phi)
+                s[1] = x2
+                s[2] = y2
+                #"""
+                s[1] = s[1] + sv[i][1] * speedup
+                s[2] = s[2] + sv[i][2] * speedup
+            end
+
+            create_grids!(psr)
+            calculate_potentials!(psr)
+        end
 
     end
 
