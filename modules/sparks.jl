@@ -189,7 +189,7 @@ module Sparks
 
     # try this https://stackoverflow.com/questions/40338386/calculating-a-3d-gradient-with-unevenly-spaced-points next time?
     """
-    function create_grid!(psr, size=50)
+    function create_grid!(psr; size=50)
         r = psr.r # stellar radius in meters
 
         x_min, x_max = extrema(psr.pc[1])
@@ -265,7 +265,7 @@ module Sparks
 
 
     """
-    Calculates electric potential, electric field and drift velocity...
+    Calculates electric potential, electric field and drift velocity for sparks defined by grid indexes...
     """
     function calculate_potential!(psr)
         gr = psr.grid
@@ -294,12 +294,6 @@ module Sparks
                         end
                     end
                 end
-                if vv < v_min
-                    v_min = vv
-                end
-                if vv > v_max
-                    v_max = vv
-                end
                 if gr[3][i, j] != 0
                     vs[i, j] = vv
                 else
@@ -308,13 +302,11 @@ module Sparks
             end
         end
 
-        # set 0 potential (beyound the polar cap) to minimum
-        #println(v_min)
-        #println(v_max)
+        # set 0 potential (beyound the polar cap) to NaN
         for i in 1:grid_size
             for j in 1:grid_size
                 if vs[i, j] == 0
-                    vs[i, j] = v_max # min or max here depending on v() function!
+                    vs[i, j] = NaN
                 end
             end
         end
@@ -379,6 +371,86 @@ module Sparks
     end
 
 
+    """
+    Calculates electric potential, electric field and drift velocity for custom sparks defined by (sx, sy, sz)...
+    """
+    function calculate_potential_custom!(psr)
+        gr = psr.grid
+        grid_size = size(gr[1])[1]
+        sp = psr.sparks
+        spark_num = size(sp)[1]
+
+        vs = Array{Float64}(undef, grid_size, grid_size)
+
+        v_min =  1e50
+        v_max =  -1e50
+
+        # TODO start here
+        for i in 1:grid_size
+            for j in 1:grid_size
+                vv = 0
+                for k in 1:spark_num
+                    sx = sp[k][1]
+                    sy = sp[k][2]
+                    sz = sp[k][3]
+                    dist = norm([gr[1][i], gr[2][j], gr[3][i, j]] - [sx, sy, sz])
+                    #vv += v(dist) # nice looking dots (Inf) in the plot, but no
+                    if dist != 0
+                        vv += v(dist)
+                    end
+                end
+                if gr[3][i, j] != 0
+                    vs[i, j] = vv
+                else
+                    vs[i, j] = 0
+                end
+
+            end
+        end
+
+        # set 0 potential (beyound the polar cap) to NaN
+        for i in 1:grid_size
+            for j in 1:grid_size
+                if vs[i, j] == 0
+                    vs[i, j] = NaN
+                end
+            end
+        end
+
+        # calculate electric field
+        ex = Array{Float64}(undef, grid_size, grid_size)
+        ey = Array{Float64}(undef, grid_size, grid_size)
+
+        # python gradient calculation
+        # TODO find julia solution check calculate_potential!() for inspiration
+        np = pyimport("numpy")
+        grad_v2 = np.gradient(vs)
+        grad_vx = grad_v2[1]
+        grad_vy = grad_v2[2]
+        ex = - grad_vx
+        ey =  - grad_vy
+
+        # calculate drift velocity
+        vdx = Array{Float64}(undef, grid_size, grid_size)
+        vdy = Array{Float64}(undef, grid_size, grid_size)
+        for i in 1:grid_size
+            for j in 1:grid_size
+                B = Field.bd(gr[1][i], gr[1][j], psr)
+                E = [ex[i, j], ey[i, j], 0]
+                #println(B)
+                #println(E)
+                v = cross(E, B)
+                vdx[i, j] = v[1]
+                vdy[i, j] = v[2]
+            end
+        end
+
+        #println(typeof(grad_v2))
+        psr.potential = vs
+        psr.electric_field = [ex, ey]
+        psr.drift_velocity = [vdx, vdy]
+    end
+
 
     """
 
@@ -426,8 +498,14 @@ module Sparks
     - num: number of sparks at the inner track
 
     """
-    function init_sparks1!(psr; rfs=[0.1, 0.4, 0.7], num=3)
+    function init_sparks1!(psr; rfs=[0.295, 0.4], num=3, center=true)
         sp = []
+
+        # at the center
+        if center == true
+            car = Functions.spherical2cartesian([psr.r, 0, 0])
+            push!(sp, [car[1], car[2], car[3]])
+        end
 
         c1 = nothing
         for (i, rf) in enumerate(rfs)
@@ -446,6 +524,7 @@ module Sparks
                 num_new = convert(Int, ceil(ci / c1) * num)
                 ci_new = ceil(ci / c1) * c1
                 r_new = ci_new / (2 * pi)
+                println("Radius of track no. $i adjusted to $(r_new/psr.r_pc)")
                 thm = asin(r_new / psr.r)
                 for phi in range(0, 2pi, length=num_new+1)[1:num_new] # really?
                     car = Functions.spherical2cartesian([psr.r, thm, phi])
@@ -468,16 +547,25 @@ module Sparks
     # Arguments
 
     - rs: list of tracks radius
-    - num: number of sparks at the inner track
+    - num: number of sparks at the inner track and all the rest
 
     """
-    function init_sparks2!(psr; rfs=[0.3, 0.5], num=3)
+    function init_sparks2!(psr; rfs=[0.4, 0.7], num=5, offset=false, center=true)
         sp = []
+        # at the center
+        if center == true
+            car = Functions.spherical2cartesian([psr.r, 0, 0])
+            push!(sp, [car[1], car[2], car[3]])
+        end
 
+        dphi = 2pi / num
         for (i, rf) in enumerate(rfs)
             r = psr.r_pc * rf
             thm = asin(r / psr.r)
             for phi in range(0, 2pi, length=num+1)[1:num] # really?
+                if offset == true
+                    phi += (i % 2) * dphi / 2
+                end
                 car = Functions.spherical2cartesian([psr.r, thm, phi])
                 push!(sp, [car[1], car[2], car[3]])
                 #println(phi)
@@ -491,7 +579,7 @@ module Sparks
 
 
     """
-    Creates grids around sparks to calculate gradient...
+    Creates grids around sparks to calculate gradient (for simulation)...
 
     # Arguments
     - prec: grid precision in meters
@@ -500,7 +588,7 @@ module Sparks
     function create_grids!(psr, prec=0.3, grid_size=5)
 
         if psr.sparks == nothing
-            println("Run random_sparks! frirst..")
+            println("Run init_sparksX! frirst..")
             return
         end
 
@@ -521,7 +609,6 @@ module Sparks
         end
         psr.grid = gr
     end
-
 
 
     """
@@ -613,7 +700,7 @@ module Sparks
     end
 
 
-    function simulate!(psr, steps=10000, speedup=1)
+    function simulate!(psr; steps=100000, speedup=1)
         sp = psr.sparks
 
         for j in 1:steps

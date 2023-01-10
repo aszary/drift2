@@ -82,14 +82,23 @@ module Drift2
         #Lines.generate_dipole!(psr)
         Lines.calculate_polarcap!(psr)
         #Sparks.random_sparks!(psr)
-        #Sparks.init_sparks1!(psr)
-        Sparks.init_sparks2!(psr)
+        Sparks.init_sparks1!(psr)
+        #Sparks.init_sparks2!(psr)
+
+        Sparks.create_grid!(psr; size=100)
+        Sparks.calculate_potential_custom!(psr)
+        #Plot.potential2D(psr)
+        Plot.potential2Dv2(psr)
+
+        # simulation below
+        #=
         Sparks.create_grids!(psr)
         Sparks.calculate_potentials!(psr)
-        #Plot.sparks(psr)
-        Sparks.simulate!(psr)
-        Plot.simulation2d(psr)
+        Plot.sparks(psr)
+        #Sparks.simulate!(psr)
+        #Plot.simulation2d(psr)
         #Plot.simulation3d(psr)
+        =#
 
         println("Bye")
         #return psr
