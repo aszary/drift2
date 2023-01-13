@@ -83,7 +83,8 @@ module Drift2
         Lines.calculate_polarcap!(psr)
         #Sparks.random_sparks!(psr)
         #Sparks.init_sparks1!(psr)
-        Sparks.init_sparks2!(psr)
+        #Sparks.init_sparks2!(psr)
+        Sparks.init_sparks3!(psr)
 
 
         Sparks.create_grid!(psr; size=1000)

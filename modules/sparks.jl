@@ -579,6 +579,37 @@ module Sparks
 
 
     """
+    Initiate sparks at the polar cap (grids will be generated later!)
+    "Fibonacci" distribution
+
+    # Arguments
+
+    - num: number of sparks at the whole polar cap
+    - rfmax: fraction of the polar cap radius covered by sparks
+
+    """
+    function init_sparks3!(psr; num=30, rfmax=0.7)
+        sp = []
+        # TODO start here
+        r = psr.r
+        theta_max = rfmax * Functions.theta_max(1, psr)
+        rp = r * cos(theta_max) # calculation only at the polar cap
+        phi = pi * (3. - sqrt(5.))  # golden angle in radians
+        for i in 1:num
+            zz = r - ((i-1) / (num-1)) * (r-rp) #  # 2 * r  # z goes from r to -r
+            #println(zz)
+            radius = sqrt(r^2 - zz * zz)  # radius at z
+            theta = phi * i  # golden angle increment
+            xx = cos(theta) * radius
+            yy = sin(theta) * radius
+            push!(sp, [xx, yy, zz])
+        end
+        psr.sparks = sp
+        println("Number of sparks added: ", size(sp)[1])
+    end
+
+
+    """
     Creates grids around sparks to calculate gradient (for simulation)...
 
     # Arguments
