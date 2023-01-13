@@ -289,11 +289,24 @@ module Plot
             end
         end
 
+        #fig = Figure(; resolution=(600, 600))
+        #ax = Axis(fig[1, 1]; aspect=(1,1))
+        #heatmap!(fig, x, y, v, interpolate=false) #, colorrange=[-155, -135])
+
         fig, ax1, p = heatmap(x, y, v, interpolate=false) #, colorrange=[-155, -135])
+        resize!(fig, (700, 700)) # chaanges resolution
         #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
+
         #arrows!(x, y, ex, ey, color=:white)
         #arrows!(x, y, vx, vy, color=:white)
 
+        # get last file
+        filename = get_newfilename("output", "potential2D_", "png")
+        println("Filename: $filename")
+
+        save(filename, fig)
+        #save("output/potential2D.svg",fig) # does not work
+        #save("output/potential2D.pdf",fig) # does not work
         display(fig)
     end
 
@@ -391,14 +404,14 @@ module Plot
 
         #display(fig)
 
+        # TODO start here
+
         # get last file
-        files = glob("sparks_*.mp4", "output")
-        files = replace.(files, "output/sparks_"=>"", ".mp4"=>"")
-        nums = parse.(Int, files)
-        num = maximum(nums) + 1
+        filename = get_newfilename("output", "sparks_", "mp4")
+        println("Filename: $filename")
 
         # save animation
-        record(fig, "output/sparks_$num.mp4", 1:length(psr.locations), framerate=600) do i
+        record(fig, filename, 1:length(psr.locations), framerate=600) do i
         # animation
         #display(fig)
         #for (i, loc) in enumerate(psr.locations)
@@ -412,6 +425,20 @@ module Plot
 
     end
 
+    """
+    Returns new file name incremented by +1
+    """
+    function get_newfilename(dir, filestart, ext="mp4")
+        # get last file
+        files = glob("$filestart*.$ext", "$dir")
+        if length(files) == 0
+                return "$dir/$(filestart)1.$ext"
+        end
+        files = replace.(files, "$dir/$filestart"=>"", ".$ext"=>"")
+        nums = parse.(Int, files)
+        num = maximum(nums) + 1
+        return "$dir/$filestart$num.$ext"
+    end
 
 
     function simulation3d(psr)

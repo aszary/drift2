@@ -498,7 +498,7 @@ module Sparks
     - num: number of sparks at the inner track
 
     """
-    function init_sparks1!(psr; rfs=[0.295, 0.4], num=3, center=true)
+    function init_sparks1!(psr; rfs=[0.295, 0.8], num=3, center=true)
         sp = []
 
         # at the center
@@ -550,7 +550,7 @@ module Sparks
     - num: number of sparks at the inner track and all the rest
 
     """
-    function init_sparks2!(psr; rfs=[0.4, 0.7], num=5, offset=false, center=true)
+    function init_sparks2!(psr; rfs=[0.235, 0.71], num=3, offset=true, center=true)
         sp = []
         # at the center
         if center == true
@@ -700,7 +700,7 @@ module Sparks
     end
 
 
-    function simulate!(psr; steps=100000, speedup=1)
+    function simulate!(psr; steps=10000, speedup=1)
         sp = psr.sparks
 
         for j in 1:steps
