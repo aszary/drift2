@@ -588,7 +588,7 @@ module Sparks
     - rfmax: fraction of the polar cap radius covered by sparks
 
     """
-    function init_sparks3!(psr; num=30, rfmax=0.7)
+    function init_sparks3!(psr; num=10, rfmax=0.7)
         sp = []
         # TODO start here
         r = psr.r
@@ -731,7 +731,7 @@ module Sparks
     end
 
 
-    function simulate!(psr; steps=10000, speedup=1)
+    function simulate!(psr; steps=1000, speedup=1)
         sp = psr.sparks
 
         for j in 1:steps
