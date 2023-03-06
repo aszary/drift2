@@ -1,6 +1,7 @@
 module Plot
     using Glob
     using GLMakie
+    using LinearAlgebra
     #using GeometryBasics # no more Point3f?
     #using Meshes
     #import Meshes.Sphere
@@ -494,6 +495,37 @@ module Plot
     end
 
 
+    function vacuum3d(psr)
+        # Field.Vacuum class
+        fv = psr.field_vacuum
 
+        println(fv.electric[1])
+        # normalize fields to stellar radius
+        for i in 1:size(fv.magnetic, 1)
+            fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r
+            fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r
+        end
+        println(fv.electric[1])
+
+
+        #println(norm(fv.magnetic[1]))
+
+
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:green, transparency=true)
+        arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+
+        #=
+        # plot field lines
+        for l in psr.lines
+            lines!(ax1, l[1], l[2], l[3])
+        end
+        =#
+
+
+
+        display(fig)
+
+    end
 
 end  # module Plot

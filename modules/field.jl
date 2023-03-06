@@ -1,7 +1,23 @@
 module Field
     using LinearAlgebra
+    using PhysicalConstants.CODATA2018
+
     include("functions.jl")
     using .Functions
+
+
+    mutable struct Vacuum
+        size # number of points to calculate (size*size*size)
+        rmax # radius in meters # TODO change?
+        locations # point locations
+        magnetic # global star's magnetic field in vacuum
+        electric # global electric field in vacuum
+        beq # Magnetic field strength at the stellar equator
+        function Vacuum(; size=10, rmax=50e3)
+            return new(size, rmax, [], [], [], nothing)
+        end
+    end
+
 
     """
     dipole(r, theta)
@@ -33,5 +49,73 @@ module Field
         bd = spherical2cartesian(bd_sph)
         return bd
     end
+
+
+    """
+    Magnetic field strength at the stellar equator (Handbook p. 267)
+    """
+    function beq(p, pdot)
+        return 3.2e19 * sqrt(p * pdot)
+    end
+
+
+    """
+    Spherical components of magnetic field for an aligned rotator (Cerutti, 2016 p.3) for Q=0
+    """
+    function bvac(pos_sph, rstar, beq)
+        #println(beq)
+        r = pos_sph[1]
+        theta = pos_sph[2]
+        phi = pos_sph[3]
+        br = beq * (rstar / r) ^ 3 * 2 * cos(theta)
+        btheta = beq * (rstar / r) ^ 3 * sin(theta)
+        bphi = 0
+        return(br, btheta, bphi)
+    end
+
+
+    """
+    Spherical components of electric field for an aligned rotator (Cerutti, 2016 p.3) for Q=0
+    """
+    function evac(pos_sph, rstar, beq, omega)
+        r = pos_sph[1]
+        theta = pos_sph[2]
+        phi = pos_sph[3]
+        c = SpeedOfLightInVacuum.val # no units hereafter
+        pre = omega * rstar / c * beq * (rstar / r) ^ 4
+        er = pre * (1 - 3 * cos(theta)^2)
+        etheta = pre * (- sin(2 * theta))
+        ephi = 0
+        return(er, etheta, ephi)
+    end
+
+
+    """
+    Calculates magnetic and electric fields in vacuum (using Vacuum class).
+    """
+    function calculate_vac(psr)
+        fv = psr.field_vacuum
+        fv.beq = beq(psr.p, psr.pdot)
+        #println(fv)
+
+        rs = LinRange(psr.r, fv.rmax, fv.size)
+        thetas = LinRange(0, pi, fv.size)
+        phis = LinRange(0, 2pi, fv.size)
+
+        for i in 1:fv.size
+            for j in 1:fv.size
+                for k in 1:fv.size
+                    #println(rs[i], " ", thetas[j], " ", phis[k])
+                    pos_sph = [rs[i], thetas[j], phis[k]]
+                    b_sph = bvac(pos_sph, psr.r, fv.beq)
+                    e_sph = evac(pos_sph, psr.r, fv.beq, psr.omega)
+                    push!(fv.locations, Functions.spherical2cartesian(pos_sph))
+                    push!(fv.magnetic, Functions.vec_spherical2cartesian(pos_sph, b_sph))
+                    push!(fv.electric, Functions.vec_spherical2cartesian(pos_sph, e_sph))
+                end
+            end
+        end
+    end
+
 
 end
