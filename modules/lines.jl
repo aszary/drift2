@@ -67,20 +67,24 @@ module Lines
 
         step in meters
     """
-    function generate_vacuum!(psr; step=100, stepsnum=1000)
+    function generate_vacuum!(psr; step=100, stepsnum=2000, phi=nothing)
         fv = psr.field_vacuum
 
         # starting points
         r = psr.r
-        thetas = LinRange(0, pi/2, fv.size)
+        #thetas = LinRange(0, pi/2, fv.size)
         #thetas = LinRange(0, pi, fv.size+1)[1:end-1]
-        #thetas = LinRange(0, pi, fv.size)
-        phis = LinRange(0, 2pi, fv.size+1)[1:end-1] # get rid of last point
+        thetas = LinRange(0, pi, fv.size)
+        if phi === nothing
+            phis = LinRange(0, 2pi, fv.size+1)[1:end-1] # get rid of last point
+        else
+            phis = [phi, phi+pi]
+        end
 
         # TODO add the second half!
         
-        for i in 1:fv.size
-            for j in 1:fv.size
+        for i in 1:size(thetas)[1]
+            for j in 1:size(phis)[1]
                 pos_sph = [r, thetas[i], phis[j]]
                 b_sph = Field.bvac(pos_sph, psr.r, fv.beq)
                 e_sph = Field.evac(pos_sph, psr.r, fv.beq, psr.omega)
@@ -90,12 +94,21 @@ module Lines
                 push!(fv.magnetic_lines, [[pos[1]], [pos[2]], [pos[3]]]) # adding initial position
                 ml = fv.magnetic_lines[end]
                 posb = copy(pos)
+                step = abs(step) # start with positive step
                 for k in 1:stepsnum
                     # new fields
                     posb_sph = Functions.cartesian2spherical(posb)
                     if posb_sph[1] < psr.r
-                        break
+                        # going the other direction if needed (e.g. southern hemisphere) or break
+                        if size(ml[1], 1) > 2
+                            #println("$i $j $k - break")
+                            break
+                        else
+                            step = - step
+                            #println("$i $j $k - minus")
+                        end
                     end
+                    #println(k)
                     b_sph = Field.bvac(posb_sph, psr.r, fv.beq)
                     b = Functions.vec_spherical2cartesian(posb_sph, b_sph)
                     st = b / norm(b) * step
@@ -107,10 +120,16 @@ module Lines
                 push!(fv.electric_lines, [[pos[1]], [pos[2]], [pos[3]]]) # adding initial position
                 el = fv.electric_lines[end]
                 pose = copy(pos)
+                step = abs(step) # start with positive step
                 for k in 1:stepsnum
                     pose_sph = Functions.cartesian2spherical(pose)
                     if pose_sph[1] < psr.r
-                        break
+                        # going the other direction if needed (e.g. southern hemisphere) or break
+                        if size(el[1], 1) > 2
+                            break
+                        else
+                            step = - step
+                        end
                     end
                     e_sph = Field.evac(pose_sph, psr.r, fv.beq, psr.omega)
                     e = Functions.vec_spherical2cartesian(pose_sph, e_sph)
@@ -124,8 +143,6 @@ module Lines
 
             end
         end
-
-
 
     end
 

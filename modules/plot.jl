@@ -295,7 +295,7 @@ module Plot
         #heatmap!(fig, x, y, v, interpolate=false) #, colorrange=[-155, -135])
 
         fig, ax1, p = heatmap(x, y, v, interpolate=false) #, colorrange=[-155, -135])
-        resize!(fig, (700, 700)) # chaanges resolution
+        resize!(fig, (700, 700)) # changes resolution
         #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
 
         #arrows!(x, y, ex, ey, color=:white)
@@ -499,17 +499,15 @@ module Plot
         # Field.Vacuum class
         fv = psr.field_vacuum
 
-        println(fv.electric[1])
+        #println(fv.electric[1])
         # normalize fields to stellar radius
         for i in 1:size(fv.magnetic, 1)
             fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r
             fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r
         end
-        println(fv.electric[1])
-
+        #println(fv.electric[1])
 
         #println(norm(fv.magnetic[1]))
-
 
         fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:green, transparency=true)
         #=
@@ -523,15 +521,33 @@ module Plot
         end
 
         for l in fv.electric_lines
-            lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:red)
+            lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:red, linewidth=5)
+        end
+        display(fig)
+    end
+
+    function vacuum2d(psr)
+        # Field.Vacuum class
+        fv = psr.field_vacuum
+
+        # normalize fields to stellar radius
+        for i in 1:size(fv.magnetic, 1)
+            fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r
+            fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r
+        end
+        fig = Figure(; resolution=(600, 600))
+        #ax = Axis(fig[1, 1]; aspect=(1,1)) # TODO fix that
+
+        # plot field lines
+        for l in fv.magnetic_lines
+            lines(convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]))
         end
 
-
-
-
-
+        for l in fv.electric_lines
+            lines(convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:red, linewidth=5)
+        end
         display(fig)
-
     end
+
 
 end  # module Plot
