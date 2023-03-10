@@ -512,15 +512,21 @@ module Plot
 
 
         fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:green, transparency=true)
+        #=
         arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
         arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
-
-        #=
-        # plot field lines
-        for l in psr.lines
-            lines!(ax1, l[1], l[2], l[3])
-        end
         =#
+        # plot field lines
+
+        for l in fv.magnetic_lines
+            lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]))
+        end
+
+        for l in fv.electric_lines
+            lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:red)
+        end
+
+
 
 
 

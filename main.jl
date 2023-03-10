@@ -108,8 +108,9 @@ module Drift2
         #sparks_smallgrids()
 
         psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
-        Lines.generate_dipole!(psr)
+        #Lines.generate_dipole!(psr)
         Field.calculate_vac(psr)
+        Lines.generate_vacuum!(psr)
         Plot.vacuum3d(psr)
 
         println("Bye")

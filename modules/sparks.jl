@@ -619,7 +619,7 @@ module Sparks
     function create_grids!(psr, prec=0.3, grid_size=5)
 
         if psr.sparks == nothing
-            println("Run init_sparksX! frirst..")
+            println("Run init_sparks! frirst..")
             return
         end
 

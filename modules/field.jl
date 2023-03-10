@@ -7,14 +7,16 @@ module Field
 
 
     mutable struct Vacuum
-        size # number of points to calculate (size*size*size)
+        size # number of points to calculate (size*size*size) or size*size for lines
         rmax # radius in meters # TODO change?
         locations # point locations
         magnetic # global star's magnetic field in vacuum
         electric # global electric field in vacuum
         beq # Magnetic field strength at the stellar equator
+        magnetic_lines # magnetic field lines
+        electric_lines # electric field lines
         function Vacuum(; size=10, rmax=50e3)
-            return new(size, rmax, [], [], [], nothing)
+            return new(size, rmax, [], [], [], nothing, [], [])
         end
     end
 

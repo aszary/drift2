@@ -1,6 +1,9 @@
 module Lines
+    using LinearAlgebra
     include("functions.jl")
+    include("field.jl")
     using .Functions
+    using .Field
 
     export generate_dipole!, generate_sphere
 
@@ -33,7 +36,7 @@ module Lines
             y = Array{Float64}(undef, size)
             z = Array{Float64}(undef, size)
             for (i,th) in enumerate(thetas)
-                r = rlc * sin(th)^2
+                r = rlc * sin(th)^2 # dipolar magnetic field?
                 ca = Functions.spherical2cartesian([r, th, ph])
                 x[i] = ca[1]
                 y[i] = ca[2]
@@ -57,6 +60,73 @@ module Lines
             z[i] = ca[3]
         end
         psr.pc = [x, y, z]
+    end
+
+    """
+    Generates magnetic and electric field lines for vacuum around neutron star
+
+        step in meters
+    """
+    function generate_vacuum!(psr; step=100, stepsnum=1000)
+        fv = psr.field_vacuum
+
+        # starting points
+        r = psr.r
+        thetas = LinRange(0, pi/2, fv.size)
+        #thetas = LinRange(0, pi, fv.size+1)[1:end-1]
+        #thetas = LinRange(0, pi, fv.size)
+        phis = LinRange(0, 2pi, fv.size+1)[1:end-1] # get rid of last point
+
+        # TODO add the second half!
+        
+        for i in 1:fv.size
+            for j in 1:fv.size
+                pos_sph = [r, thetas[i], phis[j]]
+                b_sph = Field.bvac(pos_sph, psr.r, fv.beq)
+                e_sph = Field.evac(pos_sph, psr.r, fv.beq, psr.omega)
+                pos = Functions.spherical2cartesian(pos_sph)                
+                b = Functions.vec_spherical2cartesian(pos_sph, b_sph)
+                e = Functions.vec_spherical2cartesian(pos_sph, e_sph)
+                push!(fv.magnetic_lines, [[pos[1]], [pos[2]], [pos[3]]]) # adding initial position
+                ml = fv.magnetic_lines[end]
+                posb = copy(pos)
+                for k in 1:stepsnum
+                    # new fields
+                    posb_sph = Functions.cartesian2spherical(posb)
+                    if posb_sph[1] < psr.r
+                        break
+                    end
+                    b_sph = Field.bvac(posb_sph, psr.r, fv.beq)
+                    b = Functions.vec_spherical2cartesian(posb_sph, b_sph)
+                    st = b / norm(b) * step
+                    posb += st # new position for magnetic
+                    push!(ml[1], posb[1])
+                    push!(ml[2], posb[2])
+                    push!(ml[3], posb[3])
+                end
+                push!(fv.electric_lines, [[pos[1]], [pos[2]], [pos[3]]]) # adding initial position
+                el = fv.electric_lines[end]
+                pose = copy(pos)
+                for k in 1:stepsnum
+                    pose_sph = Functions.cartesian2spherical(pose)
+                    if pose_sph[1] < psr.r
+                        break
+                    end
+                    e_sph = Field.evac(pose_sph, psr.r, fv.beq, psr.omega)
+                    e = Functions.vec_spherical2cartesian(pose_sph, e_sph)
+                    st = e / norm(e) * step
+                    pose += st # new position for magnetic
+                    push!(el[1], pose[1])
+                    push!(el[2], pose[2])
+                    push!(el[3], pose[3])
+                end
+
+
+            end
+        end
+
+
+
     end
 
 end  # module Lines

@@ -4,13 +4,45 @@ module Functions
     using PhysicalConstants.CODATA2018
     export spherical2cartesian, spherical2cartesian2, rdp, rlc, theta_max
 
+
+    """
+    Converts cartesian cordinates to spherical ones...
+    """
+    function cartesian2spherical(cartesian)
+        x = cartesian[1]
+        y = cartesian[2]
+        z = cartesian[3]
+        r = sqrt(x^2 + y^2 + z^2)
+        if z > 0
+            theta = atan(sqrt(x^2 + y^2) / z)
+        elseif z < 0
+            theta = pi + atan(sqrt(x^2 + y^2) / z)
+        elseif (z == 0) && (x*y != 0)
+            theta = pi
+        end
+        if x > 0
+            phi = atan(y / x)
+        elseif (x < 0) && (y >=0)
+            phi = atan(y / x) + pi
+        elseif (x < 0) && (y < 0)
+            phi = atan(y / x) - pi
+        elseif (x == 0) && (y > 0)
+            phi = pi
+        elseif (x == 0) && (y < 0)
+            phi = -pi
+        elseif (x == 0) && (y ==0) # undefined changed to zero
+            phi = 0
+        end
+        return [r, theta, phi]
+    end
+
+
     """
     spherical2cartesian(spherical)
 
-Converts spherical cordinates to cartesian ones...
+    Converts spherical cordinates to cartesian ones...
     """
     function spherical2cartesian(spherical)
-        spherical
         x = spherical[1] * sin(spherical[2]) * cos(spherical[3])
         y = spherical[1] * sin(spherical[2]) * sin(spherical[3])
         z = spherical[1] * cos(spherical[2])
