@@ -535,17 +535,27 @@ module Plot
             fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r
             fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r
         end
-        fig = Figure(; resolution=(600, 600))
-        #ax = Axis(fig[1, 1]; aspect=(1,1)) # TODO fix that
+
+        fig = Figure(resolution=(900, 600))
+        ax = Axis(fig[1, 1]; aspect=DataAspect())
 
         # plot field lines
         for l in fv.magnetic_lines
-            lines(convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]))
+            lines!(ax, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[3]), color=:blue)
         end
 
         for l in fv.electric_lines
-            lines(convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:red, linewidth=5)
+            lines!(ax, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[3]), color=:red)
+
         end
+        #lines!(ax, Circle(Point2f(0, 0), psr.r), color=:grey, linewidth=3)
+        mesh!(ax, Circle(Point2f(0, 0), psr.r), color=(:grey, 0.4))
+
+        #xlims!(ax, -9e4, 9e4)
+        #ylims!(ax, -6e4, 6e4)
+        xlims!(ax, -3e4, 3e4)
+        ylims!(ax, -2e4, 2e4)
+        #println(fv.electric_lines[3][3])
         display(fig)
     end
 
