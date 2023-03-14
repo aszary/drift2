@@ -530,10 +530,10 @@ module Plot
         # Field.Vacuum class
         fv = psr.field_vacuum
 
-        # normalize fields to stellar radius
+        # normalize fields to stellar radius [in kilometers]
         for i in 1:size(fv.magnetic, 1)
-            fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r
-            fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r
+            fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r/1e3
+            fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r/1e3
         end
 
         fig = Figure(resolution=(900, 600))
@@ -541,20 +541,21 @@ module Plot
 
         # plot field lines
         for l in fv.magnetic_lines
-            lines!(ax, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[3]), color=:blue)
+            lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:blue)
         end
 
         for l in fv.electric_lines
-            lines!(ax, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[3]), color=:red)
+            lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:red)
 
         end
         #lines!(ax, Circle(Point2f(0, 0), psr.r), color=:grey, linewidth=3)
-        mesh!(ax, Circle(Point2f(0, 0), psr.r), color=(:grey, 0.4))
+        mesh!(ax, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
 
-        #xlims!(ax, -9e4, 9e4)
-        #ylims!(ax, -6e4, 6e4)
-        xlims!(ax, -3e4, 3e4)
-        ylims!(ax, -2e4, 2e4)
+        # in kilometers now
+        #xlims!(ax, -90, 90)
+        #ylims!(ax, -60, 60)
+        xlims!(ax, -30, 30)
+        ylims!(ax, -20, 20)
         #println(fv.electric_lines[3][3])
         display(fig)
     end
