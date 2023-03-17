@@ -109,7 +109,8 @@ module Drift2
 
         psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
         #Lines.generate_dipole!(psr)
-        Field.calculate_vac(psr)
+        Field.calculate_vac!(psr)
+        Field.calculate_eint!(psr)
         Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
         Plot.vacuum2d(psr)
         #Lines.generate_vacuum!(psr)

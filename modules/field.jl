@@ -15,8 +15,10 @@ module Field
         beq # Magnetic field strength at the stellar equator
         magnetic_lines # magnetic field lines
         electric_lines # electric field lines
-        function Vacuum(; size=10, rmax=50e3)
-            return new(size, rmax, [], [], [], nothing, [], [])
+        locs2 # point location (ns interior)
+        eint # electric field in the interior (only radial component?)
+        function Vacuum(; size=20, rmax=50e3)
+            return new(size, rmax, [], [], [], nothing, [], [], [], [])
         end
     end
 
@@ -93,9 +95,20 @@ module Field
 
 
     """
+    Electric field caused by the interior charge Equation in text (between 3/4) in Cerutti (2017) ONLY Er?
+    """
+    function e_int(theta, rstar, beq, omega)
+        c = SpeedOfLightInVacuum.val # no units hereafter
+        mu = beq * rstar ^ 3 
+        er_int = omega * mu * sin(theta)^2 / (c * rstar ^2) 
+        return [er_int, 0, 0]
+    end
+
+
+    """
     Calculates magnetic and electric fields in vacuum (using Vacuum class).
     """
-    function calculate_vac(psr)
+    function calculate_vac!(psr)
         fv = psr.field_vacuum
         fv.beq = beq(psr.p, psr.pdot)
         #println(fv)
@@ -117,6 +130,32 @@ module Field
                 end
             end
         end
+    end
+
+
+    """
+    Calculates electric field in the interior of the neutron star
+    """
+    function calculate_eint!(psr)
+        fv = psr.field_vacuum
+        fv.beq = beq(psr.p, psr.pdot)
+
+        rs = LinRange(0, psr.r, fv.size)
+        thetas = LinRange(0, pi, fv.size)
+        phis = LinRange(0, 2pi, fv.size)
+
+        for i in 1:fv.size
+            for j in 1:fv.size
+                for k in 1:fv.size
+                    #println(rs[i], " ", thetas[j], " ", phis[k])
+                    pos_sph = [rs[i], thetas[j], phis[k]]
+                    er = evac(pos_sph, psr.r, fv.beq, psr.omega)
+                    push!(fv.locs2, Functions.spherical2cartesian(pos_sph))
+                    push!(fv.eint, Functions.vec_spherical2cartesian(pos_sph, er))
+                end
+            end
+        end
+
     end
 
 
