@@ -505,17 +505,36 @@ module Plot
             fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r
             fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r
         end
+        for i in 1:size(fv.eint, 1)
+            fv.eint[i] = fv.eint[i] / fv.beq * 0.5 * psr.r
+        end
+        for i in 1:size(fv.eint2, 1)
+            fv.eint2[i] = fv.eint2[i] / fv.beq * 0.5 * psr.r
+        end
+        x, y, z = [], [], []
+
+        for i in 1:size(fv.gj3, 1)
+            #println(fv.gj3[i])
+            push!(x, fv.locs3[i][1])
+            push!(y, fv.locs3[i][2])
+            push!(z, fv.locs3[i][3])
+        end
+
         #println(fv.electric[1])
 
         #println(norm(fv.magnetic[1]))
 
-        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:green, transparency=true)
-        #=
-        arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
-        arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
-        =#
-        # plot field lines
+        #fig = Figure(; resolution=(600, 480))
+        #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:white, transparency=true)
+        #arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        #arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        # interior electric field (not well ploted)
+        #arrows!(ax1, Point3f.(fv.locs), Vec3.(fv.eint), color=:orange, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        # internal electric field
+        #arrows!(ax1, Point3f.(fv.locs2), Vec3.(fv.eint2), color=:orange, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
 
+        # plot field lines
         for l in fv.magnetic_lines
             lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]))
         end
@@ -523,6 +542,17 @@ module Plot
         for l in fv.electric_lines
             lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:red, linewidth=5)
         end
+
+        meshscatter!(ax1, convert(Array{Float64},x) , convert(Array{Float64},y) , convert(Array{Float64},z), markersize = 510.5, color = convert(Array{Float64},fv.gj3), colormap=:seismic)
+        #=
+        for i in 1:size(fv.gj3, 1)
+            if fv.gj3[i] > 0
+                meshscatter!(ax1, x[i] ,y[i] , z[i], markersize = 510.5, color=:red)
+            else
+                meshscatter!(ax1, x[i] ,y[i] , z[i], markersize = 510.5, color=:blue)
+            end
+        end
+        =#
         display(fig)
     end
 
@@ -546,17 +576,24 @@ module Plot
 
         for l in fv.electric_lines
             lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:red)
-
         end
         #lines!(ax, Circle(Point2f(0, 0), psr.r), color=:grey, linewidth=3)
+        # neutron star
         mesh!(ax, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
 
+        # charges
+        for i in 1:size(fv.gj3, 1)
+            if fv.gj3[i] > 0
+                scatter!(ax, fv.locs3[i][1]/1e3, fv.locs3[i][3]/1e3, color=:indianred, markersize=10)
+            else
+                scatter!(ax, fv.locs3[i][1]/1e3, fv.locs3[i][3]/1e3, color=:royalblue, markersize=10)
+            end
+        end
         # in kilometers now
         #xlims!(ax, -90, 90)
         #ylims!(ax, -60, 60)
         xlims!(ax, -30, 30)
         ylims!(ax, -20, 20)
-        #println(fv.electric_lines[3][3])
         display(fig)
     end
 

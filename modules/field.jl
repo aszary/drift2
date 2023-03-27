@@ -15,10 +15,14 @@ module Field
         beq # Magnetic field strength at the stellar equator
         magnetic_lines # magnetic field lines
         electric_lines # electric field lines
-        locs2 # point location (ns interior)
+        locs # point location (ns interior)
         eint # electric field in the interior (only radial component?)
+        locs2 # point location 2 
+        eint2 # internal electric field
+        locs3 # point location 3 
+        gj3 # Goldreich-Julian density
         function Vacuum(; size=20, rmax=50e3)
-            return new(size, rmax, [], [], [], nothing, [], [], [], [])
+            return new(size, rmax, [], [], [], nothing, [], [], [], [], [], [], [], [])
         end
     end
 
@@ -97,11 +101,40 @@ module Field
     """
     Electric field caused by the interior charge Equation in text (between 3/4) in Cerutti (2017) ONLY Er?
     """
-    function e_int(theta, rstar, beq, omega)
+    function e_int(pos_sph, rstar, beq, omega)
+        theta = pos_sph[1]
         c = SpeedOfLightInVacuum.val # no units hereafter
         mu = beq * rstar ^ 3 
         er_int = omega * mu * sin(theta)^2 / (c * rstar ^2) 
         return [er_int, 0, 0]
+    end
+
+    """
+    Internal electric field Equation 1 in Cerutti (2017) in cartesian coordinates !
+    """
+    function e_int2(pos_sph, psr)
+        fv = psr.field_vacuum
+        omega_vec = psr.omega_vec
+        r = Functions.spherical2cartesian(pos_sph)
+        v = cross(omega_vec, r)
+        b = Functions.vec_spherical2cartesian(pos_sph, bvac(pos_sph, psr.r, fv.beq))
+        c = SpeedOfLightInVacuum.val # no units hereafter
+        eint2 = -cross(v, b) / c
+        #println(eint2)
+        return eint2
+    end
+
+
+    """
+    Calculates Goldreich-Julian charge density
+    """
+    function GJ_density(pos_sph, psr)
+        fv = psr.field_vacuum
+        omega_vec = psr.omega_vec
+        b = Functions.vec_spherical2cartesian(pos_sph, bvac(pos_sph, psr.r, fv.beq))
+        c = SpeedOfLightInVacuum.val # no units hereafter
+        gj = -dot(omega_vec, b) / (2 * pi * c)
+        return gj
     end
 
 
@@ -149,13 +182,62 @@ module Field
                 for k in 1:fv.size
                     #println(rs[i], " ", thetas[j], " ", phis[k])
                     pos_sph = [rs[i], thetas[j], phis[k]]
-                    er = evac(pos_sph, psr.r, fv.beq, psr.omega)
-                    push!(fv.locs2, Functions.spherical2cartesian(pos_sph))
-                    push!(fv.eint, Functions.vec_spherical2cartesian(pos_sph, er))
+                    eint = e_int(pos_sph, psr.r, fv.beq, psr.omega)
+                    push!(fv.locs, Functions.spherical2cartesian(pos_sph))
+                    push!(fv.eint, Functions.vec_spherical2cartesian(pos_sph, eint))
                 end
             end
         end
 
+    end
+
+    """
+    Calculates internal electric field of the neutron star 
+    """
+    function calculate_eint2!(psr)
+        fv = psr.field_vacuum
+        fv.beq = beq(psr.p, psr.pdot)
+
+        r = psr.r
+        thetas = LinRange(0, pi, fv.size)
+        phis = LinRange(0, 2pi, fv.size)
+
+        for j in 1:fv.size
+            for k in 1:fv.size
+                pos_sph = [r, thetas[j], phis[k]]
+                eint2 = e_int2(pos_sph, psr)
+                #println(typeof(eint2), eint2, pos_sph)
+                push!(fv.locs2, Functions.spherical2cartesian(pos_sph))
+                push!(fv.eint2, eint2)
+            end
+        end
+    end
+
+
+    """
+    Calculates GJ charge density for the stellar surface 
+    """
+    function calculate_GJ!(psr; twoD=false)
+        fv = psr.field_vacuum
+        fv.beq = beq(psr.p, psr.pdot)
+
+        r = psr.r
+        thetas = LinRange(0, pi, fv.size)
+        if twoD == false
+            phis = LinRange(0, 2pi, fv.size)
+        else
+            phis = LinRange(0, pi, convert(Int, fv.size / 2))
+        end
+
+        for j in 1:fv.size
+            for k in 1:size(phis, 1)
+                pos_sph = [r, thetas[j], phis[k]]
+                gj = GJ_density(pos_sph, psr)
+                #println(typeof(eint2), eint2, pos_sph)
+                push!(fv.locs3, Functions.spherical2cartesian(pos_sph))
+                push!(fv.gj3, gj)
+            end
+        end
     end
 
 

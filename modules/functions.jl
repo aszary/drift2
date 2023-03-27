@@ -19,6 +19,8 @@ module Functions
             theta = pi + atan(sqrt(x^2 + y^2) / z)
         elseif (z == 0) && (x*y != 0)
             theta = pi
+        else
+            theta = 0 # undefined changed to zero
         end
         if x > 0
             phi = atan(y / x)
