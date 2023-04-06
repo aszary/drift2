@@ -127,7 +127,7 @@ module Drift2
 
         #Field.calculate_ff!(psr)
         #Lines.generate_forcefree!(psr)
-        #Field.calculate_GJ!(psr)
+        #Field.calculate_GJ!(psr, field=psr.field_forcefree)
         #Plot.field3d(psr, psr.field_forcefree)
 
         println("Bye")

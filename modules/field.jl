@@ -93,6 +93,7 @@ module Field
         r = pos_sph[1]
         theta = pos_sph[2]
         phi = pos_sph[3]
+        #println(rstar, r, beq)
         br = beq * (rstar / r) ^ 3 * 2 * cos(theta)
         btheta = beq * (rstar / r) ^ 3 * sin(theta)
         bphi = 0
@@ -146,10 +147,10 @@ module Field
     """
     Calculates Goldreich-Julian charge density
     """
-    function GJ_density(pos_sph, psr)
-        fv = psr.field_vacuum
-        omega_vec = psr.omega_vec
-        b = Functions.vec_spherical2cartesian(pos_sph, bvac(pos_sph, psr.r, fv.beq))
+    function GJ_density(pos_sph, r, omega_vec, beq)
+        #fv = psr.field_vacuum
+        #omega_vec = psr.omega_vec
+        b = Functions.vec_spherical2cartesian(pos_sph, bvac(pos_sph, r, beq))
         c = SpeedOfLightInVacuum.val # no units hereafter
         gj = -dot(omega_vec, b) / (2 * pi * c)
         return gj
@@ -280,8 +281,12 @@ module Field
     """
     Calculates GJ charge density for the stellar surface 
     """
-    function calculate_GJ!(psr; twoD=false)
-        fv = psr.field_vacuum
+    function calculate_GJ!(psr; field=nothing, twoD=false)
+        if field === nothing
+            fv = psr.field_vacuum
+        else
+            fv = field
+        end
         fv.beq = beq(psr.p, psr.pdot)
 
         r = psr.r
@@ -295,8 +300,8 @@ module Field
         for j in 1:size(thetas, 1)
             for k in 1:size(phis, 1)
                 pos_sph = [r, thetas[j], phis[k]]
-                gj = GJ_density(pos_sph, psr)
-                #println(typeof(eint2), eint2, pos_sph)
+                gj = GJ_density(pos_sph, psr.r, psr.omega_vec, fv.beq)
+                #println(gj)
                 push!(fv.locs3, Functions.spherical2cartesian(pos_sph))
                 push!(fv.gj3, gj)
             end
