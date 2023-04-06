@@ -81,7 +81,7 @@ module Lines
             phis = [phi, phi+pi]
         end
 
-        # TODO add the second half!
+        # TODO add the second half! done? but too many lines?
         
         for i in 1:size(thetas)[1]
             for j in 1:size(phis)[1]
@@ -139,11 +139,89 @@ module Lines
                     push!(el[2], pose[2])
                     push!(el[3], pose[3])
                 end
-
-
             end
         end
+    end
 
+    """
+    Generates magnetic and electric field lines for a force-free case
+
+        step in meters
+    """
+    function generate_forcefree!(psr; step=100, stepsnum=2000, phi=nothing)
+        ff = psr.field_forcefree
+
+        # starting points
+        r = psr.r
+
+        thetas = LinRange(0, pi, ff.size)
+        if phi === nothing
+            phis = LinRange(0, 2pi, ff.size+1)[1:end-1] # get rid of last point
+        else
+            phis = [phi, phi+pi]
+        end
+        return
+
+        omega_vec = psr.omega_vec
+
+        for i in 1:size(thetas)[1]
+            for j in 1:size(phis)[1]
+                pos_sph = [r, thetas[i], phis[j]]
+                b_sph = Field.bvac(pos_sph, psr.r, ff.beq)
+                b = Functions.vec_spherical2cartesian(pos_sph, b_sph)
+                pos = Functions.spherical2cartesian(pos_sph)
+                e = Field.eff(pos, omega_vec, b)
+                # TODO continue from here
+                push!(ff.magnetic_lines, [[pos[1]], [pos[2]], [pos[3]]]) # adding initial position
+                ml = ff.magnetic_lines[end]
+                posb = copy(pos)
+                step = abs(step) # start with positive step
+                for k in 1:stepsnum
+                    # new fields
+                    posb_sph = Functions.cartesian2spherical(posb)
+                    if posb_sph[1] < psr.r
+                        # going the other direction if needed (e.g. southern hemisphere) or break
+                        if size(ml[1], 1) > 2
+                            #println("$i $j $k - break")
+                            break
+                        else
+                            step = - step
+                            #println("$i $j $k - minus")
+                        end
+                    end
+                    #println(k)
+                    b_sph = Field.bvac(posb_sph, psr.r, ff.beq)
+                    b = Functions.vec_spherical2cartesian(posb_sph, b_sph)
+                    st = b / norm(b) * step
+                    posb += st # new position for magnetic
+                    push!(ml[1], posb[1])
+                    push!(ml[2], posb[2])
+                    push!(ml[3], posb[3])
+                end
+                push!(ff.electric_lines, [[pos[1]], [pos[2]], [pos[3]]]) # adding initial position
+                el = ff.electric_lines[end]
+                pose = copy(pos)
+                step = abs(step) # start with positive step
+                for k in 1:stepsnum
+                    pose_sph = Functions.cartesian2spherical(pose)
+                    if pose_sph[1] < psr.r
+                        # going the other direction if needed (e.g. southern hemisphere) or break
+                        if size(el[1], 1) > 2
+                            break
+                        else
+                            step = - step
+                        end
+                    end
+                    e_sph = Field.evac(pose_sph, psr.r, ff.beq, psr.omega)
+                    e = Functions.vec_spherical2cartesian(pose_sph, e_sph)
+                    st = e / norm(e) * step
+                    pose += st # new position for magnetic
+                    push!(el[1], pose[1])
+                    push!(el[2], pose[2])
+                    push!(el[3], pose[3])
+                end
+            end
+        end
     end
 
 end  # module Lines

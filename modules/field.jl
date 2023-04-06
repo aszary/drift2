@@ -27,6 +27,24 @@ module Field
     end
 
 
+    mutable struct ForceFree 
+        size # number of points to calculate (size*size*size) or size*size for lines
+        rmax # radius in meters
+        locations # point locations
+        magnetic # global star's magnetic field in vacuum
+        electric # global electric field in vacuum
+        beq # Magnetic field strength at the stellar equator
+        magnetic_lines # magnetic field lines
+        electric_lines # electric field lines
+        locs3 # point location 3 
+        gj3 # Goldreich-Julian density
+        function ForceFree(; size=20, rmax=50e3)
+            return new(size, rmax, [], [], [], nothing, [], [], [], [])
+        end
+    end
+
+
+
     """
     dipole(r, theta)
 
@@ -139,6 +157,22 @@ module Field
 
 
     """
+    Electric field in force-free magnetosphere Ruderman & Sutherland 1975 Eq. 2
+
+    all atributes in cartesian coordinates
+    r, omega_vec, B - magnetic field
+
+    returns cartesian components of electric field 
+    """
+    function eff(r, omega_vec, B)
+        #pos_sph, rstar, beq, omega)
+        c = SpeedOfLightInVacuum.val # no units hereafter
+        E = -cross(cross(omega_vec, r), B) / c
+        return E
+    end
+
+
+    """
     Calculates magnetic and electric fields in vacuum (using Vacuum class).
     """
     function calculate_vac!(psr)
@@ -160,6 +194,35 @@ module Field
                     push!(fv.locations, Functions.spherical2cartesian(pos_sph))
                     push!(fv.magnetic, Functions.vec_spherical2cartesian(pos_sph, b_sph))
                     push!(fv.electric, Functions.vec_spherical2cartesian(pos_sph, e_sph))
+                end
+            end
+        end
+    end
+
+
+    """
+    Calculates magnetic and electric fields in force-free (using ForceFree class).
+    """
+    function calculate_ff!(psr)
+        ff = psr.field_forcefree
+        ff.beq = beq(psr.p, psr.pdot)
+
+        rs = LinRange(psr.r, ff.rmax, ff.size)
+        thetas = LinRange(0, pi, ff.size)
+        phis = LinRange(0, 2pi, ff.size)
+
+        for i in 1:ff.size
+            for j in 1:ff.size
+                for k in 1:ff.size
+                    #println(rs[i], " ", thetas[j], " ", phis[k])
+                    pos_sph = [rs[i], thetas[j], phis[k]]
+                    pos_car = Functions.spherical2cartesian(pos_sph)
+                    b_sph = bvac(pos_sph, psr.r, ff.beq)
+                    b_car = Functions.vec_spherical2cartesian(pos_sph, b_sph)
+                    e_car = eff(pos_car, psr.omega_vec, b_car)
+                    push!(ff.locations, pos_car)
+                    push!(ff.magnetic, b_car)
+                    push!(ff.electric, e_car)
                 end
             end
         end
@@ -222,14 +285,14 @@ module Field
         fv.beq = beq(psr.p, psr.pdot)
 
         r = psr.r
-        thetas = LinRange(0, pi, fv.size)
+        thetas = LinRange(0.01, pi, fv.size)
         if twoD == false
             phis = LinRange(0, 2pi, fv.size)
         else
             phis = LinRange(0, pi, convert(Int, fv.size / 2))
         end
 
-        for j in 1:fv.size
+        for j in 1:size(thetas, 1)
             for k in 1:size(phis, 1)
                 pos_sph = [r, thetas[j], phis[k]]
                 gj = GJ_density(pos_sph, psr)

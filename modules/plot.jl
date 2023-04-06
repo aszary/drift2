@@ -1,11 +1,12 @@
 module Plot
     using Glob
     using GLMakie
+    using CairoMakie
     using LinearAlgebra
     #using GeometryBasics # no more Point3f?
     #using Meshes
-    #import Meshes.Sphere
     GLMakie.activate!()
+    #CairoMakie.activate!()
     #using PyPlot
     #using Plots
     #plotlyjs()
@@ -495,9 +496,9 @@ module Plot
     end
 
 
-    function vacuum3d(psr)
+    function vacuum3d(psr, field_class)
         # Field.Vacuum class
-        fv = psr.field_vacuum
+        fv = field_class
 
         #println(fv.electric[1])
         # normalize fields to stellar radius
@@ -505,14 +506,17 @@ module Plot
             fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r
             fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r
         end
+        # interior and internal electrif fields disabled
+        #=
         for i in 1:size(fv.eint, 1)
             fv.eint[i] = fv.eint[i] / fv.beq * 0.5 * psr.r
         end
         for i in 1:size(fv.eint2, 1)
             fv.eint2[i] = fv.eint2[i] / fv.beq * 0.5 * psr.r
         end
-        x, y, z = [], [], []
+        =#
 
+        x, y, z = [], [], []
         for i in 1:size(fv.gj3, 1)
             #println(fv.gj3[i])
             push!(x, fv.locs3[i][1])
@@ -527,10 +531,11 @@ module Plot
         #fig = Figure(; resolution=(600, 480))
         #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
         fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:white, transparency=true)
-        #arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
-        #arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
-        # interior electric field (not well ploted)
-        #arrows!(ax1, Point3f.(fv.locs), Vec3.(fv.eint), color=:orange, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        # magnetic and electric fields
+        arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        # interior electric field
+        #arrows!(ax1, Point3f.(fv.locs), Vec3.(fv.eint), color=:indianred, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
         # internal electric field
         #arrows!(ax1, Point3f.(fv.locs2), Vec3.(fv.eint2), color=:orange, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
 
@@ -566,35 +571,68 @@ module Plot
             fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r/1e3
         end
 
-        fig = Figure(resolution=(900, 600))
+        x, y = [], []
+        for i in 1:size(fv.gj3, 1)
+            #println(fv.gj3[i])
+            push!(x, fv.locs3[i][1])
+            push!(y, fv.locs3[i][3])
+        end
+
+
+        CairoMakie.activate!()
+        # Figure size
+        size_inches = (11/2.54, 11/2.54) # 11cm x 11cm
+        size_pt = 72 .* size_inches
+        #println(size_pt)
+        fig = Figure(resolution = size_pt, fontsize = 8)
+
+        #fig = Figure(resolution=(900, 600))
         ax = Axis(fig[1, 1]; aspect=DataAspect())
 
         # plot field lines
-        for l in fv.magnetic_lines
-            lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:blue)
+        for (i, l) in enumerate(fv.magnetic_lines)
+            if i ==1
+                lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:blue, linewidth=0.3, label="magnetic lines")
+            else
+                lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:blue, linewidth=0.3)
+            end
         end
 
-        for l in fv.electric_lines
-            lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:red)
+        for (i, l) in enumerate(fv.electric_lines)
+            if i == 1
+                lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:red, linewidth=0.3, label="electric lines")
+            else
+                lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:red, linewidth=0.3)
+            end
+
         end
         #lines!(ax, Circle(Point2f(0, 0), psr.r), color=:grey, linewidth=3)
         # neutron star
         mesh!(ax, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
 
         # charges
+        #heatmap!(ax, convert(Array{Float64},x)/1e3 , convert(Array{Float64},y)/1e3, convert(Array{Float64},fv.gj3)) # nope?
         for i in 1:size(fv.gj3, 1)
             if fv.gj3[i] > 0
-                scatter!(ax, fv.locs3[i][1]/1e3, fv.locs3[i][3]/1e3, color=:indianred, markersize=10)
+                scatter!(ax, fv.locs3[i][1]/1e3, fv.locs3[i][3]/1e3, color=:indianred, markersize=3)
             else
-                scatter!(ax, fv.locs3[i][1]/1e3, fv.locs3[i][3]/1e3, color=:royalblue, markersize=10)
+                scatter!(ax, fv.locs3[i][1]/1e3, fv.locs3[i][3]/1e3, color=:royalblue, markersize=3)
             end
         end
+
+        #Legend(fig, ax)
+        #axislegend(ax) # TODO add later
         # in kilometers now
         #xlims!(ax, -90, 90)
         #ylims!(ax, -60, 60)
         xlims!(ax, -30, 30)
         ylims!(ax, -20, 20)
-        display(fig)
+        #tightlimits!(ax)
+
+        filename = "output/vacuum2d.pdf"
+        println(filename)
+        save(filename, fig, pt_per_unit = 1)
+        #display(fig)
     end
 
 

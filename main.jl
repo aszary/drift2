@@ -34,14 +34,15 @@ module Drift2
         pot_minmax
         electric_field # at the polar cap
         drift_velocity # at the polar cap
-        field_vacuum # magnetic and ectric fields calculations
+        field_vacuum # magnetic and electric fields calculations
+        field_forcefree # magnetic and electric fields calculations
         function Pulsar(p, pdot, r)
             r_pc = rdp(p, r)
             r_lc = rlc(p)
             omega = 2 * pi / p
             omega_vec = [0, 0, omega] # align rotator
             #sphere = generate_sphere(r) # GLMakie is the King :D
-            return new(p, pdot, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], omega, omega_vec, [], nothing, nothing, nothing, nothing, [], nothing, [], nothing, nothing, nothing, nothing, Field.Vacuum())
+            return new(p, pdot, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], omega, omega_vec, [], nothing, nothing, nothing, nothing, [], nothing, [], nothing, nothing, nothing, nothing, Field.Vacuum(), Field.ForceFree())
         end
     end
 
@@ -111,15 +112,21 @@ module Drift2
 
         psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
         #Lines.generate_dipole!(psr)
-        Field.calculate_vac!(psr)
+        #Field.calculate_vac!(psr)
+        Field.calculate_ff!(psr)
         #Field.calculate_eint!(psr) # useless?
         #Field.calculate_eint2!(psr) # useless?
-        Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
-        Field.calculate_GJ!(psr; twoD=true)
-        Plot.vacuum2d(psr)
+
+        #Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
+        #Field.calculate_GJ!(psr; twoD=true)
+        #Plot.vacuum2d(psr)
+        
         #Lines.generate_vacuum!(psr)
         #Field.calculate_GJ!(psr)
-        Plot.vacuum3d(psr)
+        #Plot.vacuum3d(psr, psr.field_vacuum)
+
+        #Lines.generate_forcefree!(psr)
+        Plot.vacuum3d(psr, psr.field_forcefree)
 
         println("Bye")
     end
