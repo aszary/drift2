@@ -112,21 +112,23 @@ module Drift2
 
         psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
         #Lines.generate_dipole!(psr)
-        #Field.calculate_vac!(psr)
-        Field.calculate_ff!(psr)
         #Field.calculate_eint!(psr) # useless?
         #Field.calculate_eint2!(psr) # useless?
+
+       
+        Field.calculate_vac!(psr)
+        Lines.generate_vacuum!(psr)
+        Field.calculate_GJ!(psr)
+        Plot.field3d(psr, psr.field_vacuum)
 
         #Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
         #Field.calculate_GJ!(psr; twoD=true)
         #Plot.vacuum2d(psr)
-        
-        #Lines.generate_vacuum!(psr)
-        #Field.calculate_GJ!(psr)
-        #Plot.vacuum3d(psr, psr.field_vacuum)
 
+        #Field.calculate_ff!(psr)
         #Lines.generate_forcefree!(psr)
-        Plot.vacuum3d(psr, psr.field_forcefree)
+        #Field.calculate_GJ!(psr)
+        #Plot.field3d(psr, psr.field_forcefree)
 
         println("Bye")
     end

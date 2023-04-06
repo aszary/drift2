@@ -496,7 +496,7 @@ module Plot
     end
 
 
-    function vacuum3d(psr, field_class)
+    function field3d(psr, field_class)
         # Field.Vacuum class
         fv = field_class
 
@@ -531,9 +531,11 @@ module Plot
         #fig = Figure(; resolution=(600, 480))
         #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
         fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:white, transparency=true)
+        
         # magnetic and electric fields
-        arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
-        arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        #arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        #arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        
         # interior electric field
         #arrows!(ax1, Point3f.(fv.locs), Vec3.(fv.eint), color=:indianred, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
         # internal electric field
