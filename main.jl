@@ -117,18 +117,23 @@ module Drift2
 
        
         Field.calculate_vac!(psr)
-        Lines.generate_vacuum!(psr)
-        Field.calculate_GJ!(psr)
-        Plot.field3d(psr, psr.field_vacuum)
+        #Lines.generate_vacuum!(psr)
+        #Field.calculate_GJ!(psr)
+        #Plot.field3d(psr, psr.field_vacuum)
 
-        #Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
-        #Field.calculate_GJ!(psr; twoD=true)
-        #Plot.vacuum2d(psr)
+        Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
+        ##Field.calculate_GJ!(psr; twoD=true) # obsolete
+        Field.calculate_GJheat!(psr, psr.field_vacuum; size=1000)
+        Plot.vacuum2d(psr)
 
-        #Field.calculate_ff!(psr)
+        Field.calculate_ff!(psr)
         #Lines.generate_forcefree!(psr)
         #Field.calculate_GJ!(psr, field=psr.field_forcefree)
         #Plot.field3d(psr, psr.field_forcefree)
+
+        Lines.generate_forcefree!(psr; phi=0)
+        Field.calculate_GJheat!(psr, psr.field_forcefree; vacuum=false)
+        Plot.field2d(psr, psr.field_forcefree)
 
         println("Bye")
     end

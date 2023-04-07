@@ -21,8 +21,11 @@ module Field
         eint2 # internal electric field
         locs3 # point location 3 
         gj3 # Goldreich-Julian density
+        xgj # x coordinate for the heatmap plot
+        zgj # z coordinate for the heatmap plot
+        gj # Goldreich-Julian density fir the heatmap plot
         function Vacuum(; size=20, rmax=50e3)
-            return new(size, rmax, [], [], [], nothing, [], [], [], [], [], [], [], [])
+            return new(size, rmax, [], [], [], nothing, [], [], [], [], [], [], [], [], [], [], [])
         end
     end
 
@@ -38,8 +41,11 @@ module Field
         electric_lines # electric field lines
         locs3 # point location 3 
         gj3 # Goldreich-Julian density
-        function ForceFree(; size=20, rmax=50e3)
-            return new(size, rmax, [], [], [], nothing, [], [], [], [])
+        xgj # x coordinate for the heatmap plot
+        zgj # z coordinate for the heatmap plot
+        gj # Goldreich-Julian density fir the heatmap plot
+        function ForceFree(; size=16, rmax=50e3)
+            return new(size, rmax, [], [], [], nothing, [], [], [], [], [], [], [])
         end
     end
 
@@ -308,5 +314,48 @@ module Field
         end
     end
 
+
+    """
+    Calculates GJ charge density for the heatmap 
+    
+    xlims and zlims in kilometers
+    """
+    function calculate_GJheat!(psr, field_class; xlims=(-30, 30), zlims=(-20, 20), vacuum=true, size=100)
+        fi = field_class
+        fi.beq = beq(psr.p, psr.pdot)
+
+        xs = LinRange(xlims[1], xlims[2], size)
+        zs = LinRange(zlims[1], zlims[2], size)
+
+        for i in 1:size
+            for j in 1:size
+                x = xs[i] * 1e3 # in meters
+                z = zs[j] * 1e3 # in meters
+                # TODO fix this
+                if (x^2 + z ^2 <= psr.r^2)
+                    y = sqrt(psr.r^2 - x^2 - z^2)
+                else
+                    y = 0
+                end
+                #y = psr.r
+
+                pos_sph = Functions.cartesian2spherical([x, y, z])
+                gj = GJ_density(pos_sph, psr.r, psr.omega_vec, fi.beq)
+                #println("$(x/1e3) $(y/1e3) $gj")
+                #println(gj)
+                if vacuum == true
+                    if (pos_sph[1] <= psr.r) #  && (gj < 1e3)
+                        push!(fi.xgj, x)
+                        push!(fi.zgj, z)
+                        push!(fi.gj, gj)
+                    end
+                else     
+                    push!(fi.xgj, x)
+                    push!(fi.zgj, z)
+                    push!(fi.gj, gj)
+                end
+            end
+        end
+    end
 
 end

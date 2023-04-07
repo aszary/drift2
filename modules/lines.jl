@@ -154,13 +154,12 @@ module Lines
         # starting points
         r = psr.r
 
-        thetas = LinRange(0, pi, ff.size)
+        thetas = LinRange(0.0001, pi-0.00001, ff.size) # E_ff = 0 for theta=0 and pi
         if phi === nothing
             phis = LinRange(0, 2pi, ff.size+1)[1:end-1] # get rid of last point
         else
             phis = [phi, phi+pi]
         end
-        return
 
         omega_vec = psr.omega_vec
 
@@ -171,7 +170,6 @@ module Lines
                 b = Functions.vec_spherical2cartesian(pos_sph, b_sph)
                 pos = Functions.spherical2cartesian(pos_sph)
                 e = Field.eff(pos, omega_vec, b)
-                # TODO continue from here
                 push!(ff.magnetic_lines, [[pos[1]], [pos[2]], [pos[3]]]) # adding initial position
                 ml = ff.magnetic_lines[end]
                 posb = copy(pos)
@@ -212,8 +210,11 @@ module Lines
                             step = - step
                         end
                     end
-                    e_sph = Field.evac(pose_sph, psr.r, ff.beq, psr.omega)
-                    e = Functions.vec_spherical2cartesian(pose_sph, e_sph)
+                    b_sph = Field.bvac(pose_sph, psr.r, ff.beq)
+                    b = Functions.vec_spherical2cartesian(pose_sph, b_sph)
+                    #println(pose)
+                    e = Field.eff(pose, omega_vec, b)
+                    #println(e)
                     st = e / norm(e) * step
                     pose += st # new position for magnetic
                     push!(el[1], pose[1])

@@ -498,62 +498,62 @@ module Plot
 
     function field3d(psr, field_class)
         # Field.Vacuum class
-        fv = field_class
+        fi = field_class
 
-        #println(fv.electric[1])
+        #println(fi.electric[1])
         # normalize fields to stellar radius
-        for i in 1:size(fv.magnetic, 1)
-            fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r
-            fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r
+        for i in 1:size(fi.magnetic, 1)
+            fi.magnetic[i] =  fi.magnetic[i] / fi.beq * 0.5 * psr.r
+            fi.electric[i] =  fi.electric[i] / fi.beq * 0.5 * psr.r
         end
         # interior and internal electrif fields disabled
         #=
-        for i in 1:size(fv.eint, 1)
-            fv.eint[i] = fv.eint[i] / fv.beq * 0.5 * psr.r
+        for i in 1:size(fi.eint, 1)
+            fi.eint[i] = fi.eint[i] / fi.beq * 0.5 * psr.r
         end
-        for i in 1:size(fv.eint2, 1)
-            fv.eint2[i] = fv.eint2[i] / fv.beq * 0.5 * psr.r
+        for i in 1:size(fi.eint2, 1)
+            fi.eint2[i] = fi.eint2[i] / fi.beq * 0.5 * psr.r
         end
         =#
 
         x, y, z = [], [], []
-        for i in 1:size(fv.gj3, 1)
-            #println(fv.gj3[i])
-            push!(x, fv.locs3[i][1])
-            push!(y, fv.locs3[i][2])
-            push!(z, fv.locs3[i][3])
+        for i in 1:size(fi.gj3, 1)
+            #println(fi.gj3[i])
+            push!(x, fi.locs3[i][1])
+            push!(y, fi.locs3[i][2])
+            push!(z, fi.locs3[i][3])
         end
 
-        #println(fv.electric[1])
+        #println(fi.electric[1])
 
-        #println(norm(fv.magnetic[1]))
+        #println(norm(fi.magnetic[1]))
 
         #fig = Figure(; resolution=(600, 480))
         #ax1 = Axis3(fig[1, 1]; aspect=(1,1,1), perspectiveness=0.5)
         fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:white, transparency=true)
         
         # magnetic and electric fields
-        #arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
-        #arrows!(ax1, Point3f.(fv.locations), Vec3.(fv.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        #arrows!(ax1, Point3f.(fi.locations), Vec3.(fi.magnetic), color=:blue, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        #arrows!(ax1, Point3f.(fi.locations), Vec3.(fi.electric), color=:red, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
         
         # interior electric field
-        #arrows!(ax1, Point3f.(fv.locs), Vec3.(fv.eint), color=:indianred, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        #arrows!(ax1, Point3f.(fi.locs), Vec3.(fi.eint), color=:indianred, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
         # internal electric field
-        #arrows!(ax1, Point3f.(fv.locs2), Vec3.(fv.eint2), color=:orange, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
+        #arrows!(ax1, Point3f.(fi.locs2), Vec3.(fi.eint2), color=:orange, arrowsize=Vec3f(0.1*psr.r, 0.1*psr.r, 0.2*psr.r), linewidth=0.05*psr.r)
 
         # plot field lines
-        for l in fv.magnetic_lines
+        for l in fi.magnetic_lines
             lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]))
         end
 
-        for l in fv.electric_lines
+        for l in fi.electric_lines
             lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:red, linewidth=5)
         end
 
-        meshscatter!(ax1, convert(Array{Float64},x) , convert(Array{Float64},y) , convert(Array{Float64},z), markersize = 510.5, color = convert(Array{Float64},fv.gj3), colormap=:seismic)
+        meshscatter!(ax1, convert(Array{Float64},x) , convert(Array{Float64},y) , convert(Array{Float64},z), markersize = 510.5, color = convert(Array{Float64},fi.gj3), colormap=:seismic)
         #=
-        for i in 1:size(fv.gj3, 1)
-            if fv.gj3[i] > 0
+        for i in 1:size(fi.gj3, 1)
+            if fi.gj3[i] > 0
                 meshscatter!(ax1, x[i] ,y[i] , z[i], markersize = 510.5, color=:red)
             else
                 meshscatter!(ax1, x[i] ,y[i] , z[i], markersize = 510.5, color=:blue)
@@ -580,7 +580,6 @@ module Plot
             push!(y, fv.locs3[i][3])
         end
 
-
         CairoMakie.activate!()
         # Figure size
         size_inches = (11/2.54, 11/2.54) # 11cm x 11cm
@@ -590,6 +589,9 @@ module Plot
 
         #fig = Figure(resolution=(900, 600))
         ax = Axis(fig[1, 1]; aspect=DataAspect())
+
+        # charges
+        heatmap!(ax, convert(Array{Float64},fv.xgj)/1e3 , convert(Array{Float64},fv.zgj)/1e3, convert(Array{Float64},fv.gj))
 
         # plot field lines
         for (i, l) in enumerate(fv.magnetic_lines)
@@ -610,10 +612,10 @@ module Plot
         end
         #lines!(ax, Circle(Point2f(0, 0), psr.r), color=:grey, linewidth=3)
         # neutron star
-        mesh!(ax, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
+        #mesh!(ax, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
 
-        # charges
-        #heatmap!(ax, convert(Array{Float64},x)/1e3 , convert(Array{Float64},y)/1e3, convert(Array{Float64},fv.gj3)) # nope?
+        # charges # obsolete
+        #=
         for i in 1:size(fv.gj3, 1)
             if fv.gj3[i] > 0
                 scatter!(ax, fv.locs3[i][1]/1e3, fv.locs3[i][3]/1e3, color=:indianred, markersize=3)
@@ -621,6 +623,7 @@ module Plot
                 scatter!(ax, fv.locs3[i][1]/1e3, fv.locs3[i][3]/1e3, color=:royalblue, markersize=3)
             end
         end
+        =#
 
         #Legend(fig, ax)
         #axislegend(ax) # TODO add later
@@ -637,5 +640,74 @@ module Plot
         #display(fig)
     end
 
+
+    function field2d(psr, field_class)
+        fi = field_class
+
+        # normalize fields to stellar radius [in kilometers]
+        for i in 1:size(fi.magnetic, 1)
+            fi.magnetic[i] =  fi.magnetic[i] / fi.beq * 0.5 * psr.r/1e3
+            fi.electric[i] =  fi.electric[i] / fi.beq * 0.5 * psr.r/1e3
+        end
+
+        CairoMakie.activate!()
+        # Figure size
+        size_inches = (11/2.54, 11/2.54) # 11cm x 11cm
+        size_pt = 72 .* size_inches
+        #println(size_pt)
+        fig = Figure(resolution = size_pt, fontsize = 8)
+
+        #fig = Figure(resolution=(900, 600))
+        ax = Axis(fig[1, 1]; aspect=DataAspect())
+
+        # charges
+        heatmap!(ax, convert(Array{Float64},fi.xgj)/1e3 , convert(Array{Float64},fi.zgj)/1e3, convert(Array{Float64},fi.gj), transparency=true)
+
+        # plot field lines
+        for (i, l) in enumerate(fi.magnetic_lines)
+            if i ==1
+                lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:blue, linewidth=0.3, label="magnetic lines")
+            else
+                lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:blue, linewidth=0.3)
+            end
+        end
+
+        for (i, l) in enumerate(fi.electric_lines)
+            if i == 1
+                lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:red, linewidth=0.3, label="electric lines")
+            else
+                lines!(ax, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:red, linewidth=0.3)
+            end
+
+        end
+        #lines!(ax, Circle(Point2f(0, 0), psr.r), color=:grey, linewidth=3)
+        # neutron star
+        #mesh!(ax, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
+
+        # charges
+        #=
+        for i in 1:size(fi.gj3, 1)
+            if fi.gj3[i] > 0
+                scatter!(ax, fi.locs3[i][1]/1e3, fi.locs3[i][3]/1e3, color=:indianred, markersize=3)
+            else
+                scatter!(ax, fi.locs3[i][1]/1e3, fi.locs3[i][3]/1e3, color=:royalblue, markersize=3)
+            end
+        end
+        =#
+
+        #Legend(fig, ax)
+        #axislegend(ax) # TODO add later
+        # in kilometers now
+        #xlims!(ax, -90, 90)
+        #ylims!(ax, -60, 60)
+        xlims!(ax, -30, 30)
+        ylims!(ax, -20, 20)
+        #tightlimits!(ax)
+
+        filename = "output/field2d.pdf"
+        println(filename)
+        save(filename, fig, pt_per_unit = 1)
+        #display(fig)
+    end
 
 end  # module Plot
