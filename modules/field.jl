@@ -24,7 +24,7 @@ module Field
         xgj # x coordinate for the heatmap plot
         zgj # z coordinate for the heatmap plot
         gj # Goldreich-Julian density fir the heatmap plot
-        function Vacuum(; size=20, rmax=50e3)
+        function Vacuum(; size=16, rmax=50e3)
             return new(size, rmax, [], [], [], nothing, [], [], [], [], [], [], [], [], [], [], [])
         end
     end
@@ -157,10 +157,29 @@ module Field
         #fv = psr.field_vacuum
         #omega_vec = psr.omega_vec
         b = Functions.vec_spherical2cartesian(pos_sph, bvac(pos_sph, r, beq))
-        c = SpeedOfLightInVacuum.val # no units hereafter
+        c = SpeedOfLightInVacuum.val * 1e2 # in cm # no units hereafter
         gj = -dot(omega_vec, b) / (2 * pi * c)
         return gj
     end
+
+
+    """
+    Calculates Goldreich-Julian number charge density
+        # TODO change to SI particle / cm^3
+        n = (B * Omega) / (2 * pi * c * qe)
+        qe = 4.8e-10  # Ładunek elementarny w jednostkach elektrostatycznych w statcoulombs
+    """
+    function GJ_ndensity(pos_sph, r, omega_vec, beq)
+        #fv = psr.field_vacuum
+        #omega_vec = psr.omega_vec
+        b = Functions.vec_spherical2cartesian(pos_sph, bvac(pos_sph, r, beq))
+        c = SpeedOfLightInVacuum.val * 1e2 # in cm no units hereafter
+        qe = 4.8032047e-10 # statcoulombs
+        gj = -dot(omega_vec, b) / (2 * pi * c * qe)
+        return gj
+    end
+
+
 
 
     """
@@ -306,7 +325,7 @@ module Field
         for j in 1:size(thetas, 1)
             for k in 1:size(phis, 1)
                 pos_sph = [r, thetas[j], phis[k]]
-                gj = GJ_density(pos_sph, psr.r, psr.omega_vec, fv.beq)
+                gj = GJ_ndensity(pos_sph, psr.r, psr.omega_vec, fv.beq)
                 #println(gj)
                 push!(fv.locs3, Functions.spherical2cartesian(pos_sph))
                 push!(fv.gj3, gj)
@@ -317,10 +336,9 @@ module Field
 
     """
     Calculates GJ charge density for the heatmap 
-    
     xlims and zlims in kilometers
     """
-    function calculate_GJheat!(psr, field_class; xlims=(-30, 30), zlims=(-20, 20), vacuum=true, size=100)
+    function calculate_GJheat!(psr, field_class; xlims=(-30, 30), zlims=(-30, 30), vacuum=true, size=100)
         fi = field_class
         fi.beq = beq(psr.p, psr.pdot)
 
@@ -340,7 +358,7 @@ module Field
                 #y = psr.r
 
                 pos_sph = Functions.cartesian2spherical([x, y, z])
-                gj = GJ_density(pos_sph, psr.r, psr.omega_vec, fi.beq)
+                gj = GJ_ndensity(pos_sph, psr.r, psr.omega_vec, fi.beq)
                 #println("$(x/1e3) $(y/1e3) $gj")
                 #println(gj)
                 if vacuum == true

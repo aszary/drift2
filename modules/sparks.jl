@@ -498,7 +498,7 @@ module Sparks
     - num: number of sparks at the inner track
 
     """
-    function init_sparks1!(psr; rfs=[0.295, 0.8], num=3, center=true)
+    function init_sparks1!(psr; rfs=[0.295, 0.5], num=3, center=true)
         sp = []
 
         # at the center

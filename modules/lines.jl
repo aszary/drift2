@@ -67,7 +67,7 @@ module Lines
 
         step in meters
     """
-    function generate_vacuum!(psr; step=100, stepsnum=2000, phi=nothing)
+    function generate_vacuum!(psr; step=10, stepsnum=20000, phi=nothing)
         fv = psr.field_vacuum
 
         # starting points
@@ -148,7 +148,7 @@ module Lines
 
         step in meters
     """
-    function generate_forcefree!(psr; step=100, stepsnum=2000, phi=nothing)
+    function generate_forcefree!(psr; step=10, stepsnum=20000, phi=nothing)
         ff = psr.field_forcefree
 
         # starting points

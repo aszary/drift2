@@ -12,6 +12,12 @@ module Plot
     #plotlyjs()
     #pyplot()
 
+    include("functions.jl")
+    include("field.jl")
+    using .Functions
+    using .Field
+
+
     # https://discourse.julialang.org/t/determining-xlims/72921/2
     #xlims(ax::Axis) = @lift ($(ax.finallimits).origin[1], $(ax.finallimits).origin[1] + $(ax.finallimits).widths[1])
     #ylims(ax::Axis) = @lift ($(ax.finallimits).origin[2], $(ax.finallimits).origin[2] + $(ax.finallimits).widths[2])
@@ -381,7 +387,7 @@ module Plot
 
         # plot polar cap
         fig, ax, pl = lines(psr.pc[1], psr.pc[2])
-        #println(fieldnames(typeof(fig))) # HERE useful!
+        #println(fieldnames(typeof(fig))) # HERE useful!, dump is better
         ax.aspect = DataAspect()
 
         observables = []
@@ -661,7 +667,7 @@ module Plot
         ax = Axis(fig[1, 1]; aspect=DataAspect())
 
         # charges
-        heatmap!(ax, convert(Array{Float64},fi.xgj)/1e3 , convert(Array{Float64},fi.zgj)/1e3, convert(Array{Float64},fi.gj), transparency=true)
+        heatmap!(ax, convert(Array{Float64},fi.xgj)/1e3 , convert(Array{Float64},fi.zgj)/1e3, convert(Array{Float64},fi.gj))
 
         # plot field lines
         for (i, l) in enumerate(fi.magnetic_lines)
@@ -709,5 +715,277 @@ module Plot
         save(filename, fig, pt_per_unit = 1)
         #display(fig)
     end
+
+    function fields(psr, field_vacuum, field_forcefree)
+
+        fv = field_vacuum
+        ff = field_forcefree
+
+        # normalize fields to stellar radius [in kilometers]
+        for i in 1:size(fv.magnetic, 1)
+            fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r/1e3
+            fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r/1e3
+        end
+
+        # normalize fields to stellar radius [in kilometers]
+        for i in 1:size(ff.magnetic, 1)
+            ff.magnetic[i] =  ff.magnetic[i] / ff.beq * 0.5 * psr.r/1e3
+            ff.electric[i] =  ff.electric[i] / ff.beq * 0.5 * psr.r/1e3
+        end
+
+
+        CairoMakie.activate!()
+        # Figure size
+        size_inches = (17/2.54, 6.5/2.54) # 17cm x 6.5cm
+        size_pt = 72 .* size_inches
+        #println(size_pt)
+        fig = Figure(resolution = size_pt, fontsize = 8)
+
+        ax1 = Axis(fig[1, 1]; aspect=DataAspect(), xlabel="x (km)", ylabel="z (km)") #, xminorticksvisible=true, yminorticksvisible=true)
+       # charges
+        heatmap!(ax1, convert(Array{Float64},fv.xgj)/1e3 , convert(Array{Float64},fv.zgj)/1e3, convert(Array{Float64},fv.gj))
+        #heatmap!(ax1, convert(Array{Float64},fv.xgj)/1e3 , convert(Array{Float64},fv.zgj)/1e3, log10.(abs.(convert(Array{Float64},fv.gj)))) # log10
+        # plot field lines
+        for (i, l) in enumerate(fv.magnetic_lines)
+            if i ==1
+                lines!(ax1, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:royalblue1, linewidth=0.7, label="magnetic lines")
+            else
+                lines!(ax1, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:royalblue1, linewidth=0.7)
+            end
+        end
+        for (i, l) in enumerate(fv.electric_lines)
+            if i == 1
+                lines!(ax1, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:indianred1, linewidth=0.7, label="electric lines")
+            else
+                lines!(ax1, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:indianred1, linewidth=0.7)
+            end
+
+        end
+        lines!(ax1, Circle(Point2f(0, 0), psr.r/1e3), color=:palegreen1, linewidth=1)
+        # neutron star
+        #mesh!(ax1, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
+        # magnetic axis
+        arrows!(ax1, [0], [19], [0], [3], linewidth=0.77, arrowsize=3, color=:black, transparency=true)
+        text!(ax1, 0.5, 25.7, text=L"\mathbf{\mu}", fontsize=8)
+        # rotation axis
+        arrows!(ax1, [0], [25], [0], [3], linewidth=0.77, arrowsize=3, color=:black, transparency=true)
+        text!(ax1, 0.5, 18.3, text=L"\mathbf{\Omega}", fontsize=8)
+        tightlimits!(ax1)
+        hidexdecorations!(ax1, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        hideydecorations!(ax1, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        text!(ax1, -27, 25, text="a)", fontsize=9)
+        xlims!(ax1, -30, 30)
+        ylims!(ax1, -30, 30)
+        
+
+        ax2 = Axis(fig[1, 2]; aspect=DataAspect(), xlabel="x (km)", ylabel="z (km)") #, xminorticksvisible=true, yminorticksvisible=true)
+        # charges
+        hm = heatmap!(ax2, convert(Array{Float64},ff.xgj)/1e3 , convert(Array{Float64},ff.zgj)/1e3, convert(Array{Float64},ff.gj)) #, colorrange=[-6732.297190412704, 6732.297190412704])
+        # TODO play with log scale?
+        #hm = heatmap!(ax2, convert(Array{Float64},ff.xgj)/1e3 , convert(Array{Float64},ff.zgj)/1e3, log10.(abs.(convert(Array{Float64},ff.gj)))) #, colorrange=[-6732.297190412704, 6732.297190412704])
+        cb = Colorbar(fig[1, 3], hm, label=L"$n_{GJ}$", vertical=true, height=Relative(0.7))
+        #println(dump(cb,maxdepth=1))
+        # plot field lines
+        for (i, l) in enumerate(ff.magnetic_lines)
+            if i ==1
+                lines!(ax2, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:royalblue1, linewidth=0.7, label="magnetic lines")
+            else
+                lines!(ax2, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:royalblue1, linewidth=0.7)
+            end
+        end
+        for (i, l) in enumerate(ff.electric_lines)
+            if i == 1
+                lines!(ax2, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:indianred1, linewidth=0.7, label="electric lines")
+            else
+                lines!(ax2, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:indianred1, linewidth=0.7)
+            end
+
+        end
+        # neutron star
+        lines!(ax2, Circle(Point2f(0, 0), psr.r/1e3), color=:palegreen1, linewidth=1)
+        #mesh!(ax2, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
+        # magnetic axis
+        arrows!(ax2, [0], [19], [0], [3], linewidth=0.7, arrowsize=3, color=:black, transparency=true)
+        text!(ax2, 0.5, 25.7, text=L"\mathbf{\mu}", fontsize=8)
+        # rotation axis
+        arrows!(ax2, [0], [25], [0], [3], linewidth=0.7, arrowsize=3, color=:black, transparency=true)
+        text!(ax2, 0.5, 18.3, text=L"\mathbf{\Omega}", fontsize=8)
+        tightlimits!(ax2)
+        hidexdecorations!(ax2, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        hideydecorations!(ax2, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        text!(ax2, -27, 25, text="b)", fontsize=9)
+        xlims!(ax2, -30, 30)
+        ylims!(ax2, -30, 30)
+
+
+        filename = "output/fields.pdf"
+        println(filename)
+        save(filename, fig, pt_per_unit = 1)
+        #display(fig)
+
+
+
+
+    end
+
+    function polar_cap(psr)
+        spark_radius = 20 # in meters
+
+        ff = psr.field_forcefree
+        # normalize fields to stellar radius [in kilometers]
+        for i in 1:size(ff.magnetic, 1)
+            ff.magnetic[i] =  ff.magnetic[i] / ff.beq * 0.5 * psr.r/1e3
+            ff.electric[i] =  ff.electric[i] / ff.beq * 0.5 * psr.r/1e3
+        end
+
+        # spark num to plot
+        sn = 8
+
+        sx = psr.sparks[sn][1]
+        sy = psr.sparks[sn][2]
+
+        pnum = 6 # points at which fields are calculated
+        cov = 0.7 # points coverage
+        vlength = 0.15 #  drift velocity lenght
+
+        points = Array{Float64}(undef, pnum, 3)
+
+        dx = 2 * cov * spark_radius / (pnum -1)
+        for i in 1:pnum
+            points[i, 1] = sx - cov * spark_radius + dx * (i - 1)
+            points[i, 2] = sy
+            points[i, 3] = sqrt(psr.r ^2 - points[i,1]^2 - points[i,2]^2)
+        end
+
+        # drift velocity for the LBC model
+        vdl = Array{Float64}(undef, pnum, 3)
+        # electric field in the LBC model
+        el = Array{Float64}(undef, pnum, 3)
+        # electric field in the MC model
+        em = Array{Float64}(undef, pnum, 3)
+        # drift velocity for the MC model
+        vdm = Array{Float64}(undef, pnum, 3)
+       
+        for i in 1:pnum
+            # electric fields
+            el[i, 1] = - points[i, 1]
+            el[i, 2] = - points[i, 2]
+            el[i, 3] = 0 
+            el[i,:] = el[i,:] / norm(el[i,:]) * cov * spark_radius # normalize the length
+            em[i, 1] = sx - points[i, 1]
+            em[i, 2] = sy - points[i, 2]
+            em[i, 3] = 0 
+            em[i,:] = em[i,:] / norm(em[i,:]) * vlength * 0.5 * spark_radius # normalize the length
+            # magneitc field
+            r = Functions.cartesian2spherical(points[i,:])
+            b_sph = Field.dipole(1, r[2]) # r_theta used    
+            b_car = Functions.vec_spherical2cartesian(r, b_sph)
+            # drift velocities
+            v = cross(el[i, :], b_car)
+            vdl[i, :] = v / norm(v) * vlength * spark_radius # normalize
+            vm = cross(em[i, :], b_car)
+            vdm[i, :] = vm / norm(vm) * 2 * vlength * spark_radius # normalize
+        end
+
+        # Generate curved arrow (for the top panel)
+        ome = Array{Float64}(undef,2, 100)
+        ph = range(0.8*pi, 2.1*pi, length=100)
+        for i in 1:100
+            ome[1, i] = 35 * cos(ph[i]) 
+            ome[2, i] = 35 * sin(ph[i])
+        end
+
+        # generate civulation line
+        cilx = collect(range(sx - 1.2* spark_radius, sx+1.2*spark_radius, length=100) )
+        cily = fill(sy, 100)
+
+
+        CairoMakie.activate!()
+
+        # Figure size
+        size_inches = (17/2.54, 11/2.54) # 17cm x 11cm
+        size_pt = 72 .* size_inches
+        #println(size_pt)
+        fig = Figure(resolution=size_pt, fontsize=8, figure_padding=(1, 2, 0, 0)) # left, right, bottom, top
+
+        # TODO:
+        # - charges between sparks..
+        # - reorder velocities top-down...
+        top = Axis(fig[1, 2]; aspect=DataAspect(), xlabel="x (m)", ylabel="y (m)", xminorticksvisible=true, yminorticksvisible=true, xaxisposition=:top)
+        hidexdecorations!(top, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        hideydecorations!(top, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        # plot polar cap boundry
+        lines!(top, psr.pc[1], psr.pc[2], color=:green)
+        # plot sparks
+        if psr.sparks != nothing
+            for sp in psr.sparks
+                lines!(top, Circle(Point2f(sp[1], sp[2]), spark_radius), color=:grey, linewidth=1)
+                #scatter!(top, sp[1], sp[2], sp[3], marker=:xcross, color=:red)
+            end
+        end
+        lines!(top, cilx, cily, linewidth=0.7, linestyle=:dash, color=:palegreen1)
+        lines!(top, ome[1,:], ome[2, :], color=:black, linewidth=0.7)
+        arrows!(top, [ome[1, 1]], [ome[2, 1]], [ome[1, 1]-ome[1, 2]], [ome[2, 1]-ome[2, 2]], arrowsize=5, color=:black)
+        text!(top, -20, -65, text=L"\mathbf{\Omega}", fontsize=8)
+
+        lef = Axis(fig[2, 1]; aspect=DataAspect(), xlabel="x (m)", ylabel="y (m)", xminorticksvisible=true, yminorticksvisible=true)
+        hidexdecorations!(lef, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        hideydecorations!(lef, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        lines!(lef, Circle(Point2f(psr.sparks[sn][1], psr.sparks[sn][2]), spark_radius), color=:grey, linewidth=1)
+        lines!(lef, cilx, cily, linewidth=0.7, linestyle=:dash, color=:palegreen1)
+        for i in 1:pnum
+            arrows!(lef, [points[i, 1]], [points[i, 2]], [el[i, 1]], [el[i, 2]], arrowsize=5, color=:indianred)
+            arrows!(lef, [points[i, 1]], [points[i, 2]], [vdl[i, 1]], [vdl[i, 2]], arrowsize=5, color=:black)
+        end
+        text!(lef, sx-2.1, sy+5, text=L"\mathbf{E_{\perp}^{\prime}}", fontsize=8, color=:indianred)
+        text!(lef, sx-2.1, sy-7, text=L"\mathbf{v_{d}^{\prime}}", fontsize=8, color=:black)
+
+
+        mid = Axis(fig[2, 2]; aspect=DataAspect(), xlabel="x (m)", ylabel="y (m)", xminorticksvisible=true, yminorticksvisible=true)
+        hidexdecorations!(mid, label=true, ticklabels=true, ticks=true, grid=true, minorgrid=true, minorticks=true)
+        hideydecorations!(mid, label=true, ticklabels=true, ticks=true, grid=true, minorgrid=true, minorticks=true)
+        hidespines!(mid)
+        # neutron star
+        lines!(mid, Circle(Point2f(0, 0), psr.r/1e3), color=:palegreen1, linewidth=0.5)
+        # plot field lines
+        for (i, l) in enumerate(ff.magnetic_lines)
+            lines!(mid, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:black, linewidth=0.1)
+        end
+        xlims!(mid, -30, 30)
+        ylims!(mid, -30, 70)
+        for l in psr.lines
+            #plot!(mid, l[1], l[3])
+        end
+
+
+        rig = Axis(fig[2, 3]; aspect=DataAspect(), xlabel="x (m)", ylabel="y (m)", xminorticksvisible=true, yminorticksvisible=true, yaxisposition=:right)
+        hidexdecorations!(rig, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        hideydecorations!(rig, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+
+        lines!(rig, Circle(Point2f(psr.sparks[sn][1], psr.sparks[sn][2]), spark_radius), color=:grey, linewidth=1)
+        lines!(rig, cilx, cily, linewidth=0.7, linestyle=:dash, color=:palegreen1)
+        for i in 1:pnum
+            arrows!(rig, [points[i, 1]], [points[i, 2]], [em[i, 1]], [em[i, 2]], arrowsize=5, color=:indianred)
+            arrows!(rig, [points[i, 1]], [points[i, 2]], [vdm[i, 1]], [vdm[i, 2]], arrowsize=5, color=:black)
+        end
+        text!(rig, sx-3.1, sy+1, text=L"\mathbf{E_{\perp}^{\prime}}", fontsize=8, color=:indianred)
+        text!(rig, sx-2.1, sy-7, text=L"\mathbf{v_{d}^{\prime}}", fontsize=8, color=:black)
+
+
+
+
+
+
+        filename = "output/polar_cap.pdf"
+        filename2 = replace(filename, ".pdf"=>".svg")
+        println(filename)
+        save(filename, fig, pt_per_unit = 1)
+        #println(filename2)
+        #save(filename2, fig, pt_per_unit = 1) # slow
+        #display(fig)
+
+    end
+
+
 
 end  # module Plot

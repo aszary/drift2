@@ -39,7 +39,7 @@ module Drift2
         function Pulsar(p, pdot, r)
             r_pc = rdp(p, r)
             r_lc = rlc(p)
-            omega = 2 * pi / p
+            omega = 2 * pi / p # SI units
             omega_vec = [0, 0, omega] # align rotator
             #sphere = generate_sphere(r) # GLMakie is the King :D
             return new(p, pdot, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], omega, omega_vec, [], nothing, nothing, nothing, nothing, [], nothing, [], nothing, nothing, nothing, nothing, Field.Vacuum(), Field.ForceFree())
@@ -104,36 +104,67 @@ module Drift2
     end
 
 
-    function main()
-
-        #gradient3D_old()
-        #sparks_fullgrid()
-        #sparks_smallgrids()
+    function fields()
 
         psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
         #Lines.generate_dipole!(psr)
         #Field.calculate_eint!(psr) # useless?
         #Field.calculate_eint2!(psr) # useless?
 
-       
-        Field.calculate_vac!(psr)
+        #Field.calculate_vac!(psr)
         #Lines.generate_vacuum!(psr)
         #Field.calculate_GJ!(psr)
         #Plot.field3d(psr, psr.field_vacuum)
 
-        Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
+        #Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
         ##Field.calculate_GJ!(psr; twoD=true) # obsolete
-        Field.calculate_GJheat!(psr, psr.field_vacuum; size=1000)
-        Plot.vacuum2d(psr)
-
+        #Field.calculate_GJheat!(psr, psr.field_vacuum; size=1000)
+        #Plot.vacuum2d(psr)
+        
+        # 3D here
+        #=
         Field.calculate_ff!(psr)
-        #Lines.generate_forcefree!(psr)
-        #Field.calculate_GJ!(psr, field=psr.field_forcefree)
-        #Plot.field3d(psr, psr.field_forcefree)
+        Lines.generate_forcefree!(psr)
+        Field.calculate_GJ!(psr, field=psr.field_forcefree)
+        Plot.field3d(psr, psr.field_forcefree)
+        =#
 
+        #Lines.generate_forcefree!(psr; phi=0)
+        #Field.calculate_GJheat!(psr, psr.field_forcefree; vacuum=false)
+        #Plot.field2d(psr, psr.field_forcefree)
+
+        # in the paper
+        Field.calculate_vac!(psr)
+        Lines.generate_vacuum!(psr; phi=0) # phi=0 for 2d plot
+        Field.calculate_GJheat!(psr, psr.field_vacuum; size=1000)
+        Field.calculate_ff!(psr)
         Lines.generate_forcefree!(psr; phi=0)
         Field.calculate_GJheat!(psr, psr.field_forcefree; vacuum=false)
-        Plot.field2d(psr, psr.field_forcefree)
+        Plot.fields(psr, psr.field_vacuum, psr.field_forcefree)
+
+    end
+
+
+    function main()
+
+        #gradient3D_old()
+        #sparks_fullgrid()
+        #sparks_smallgrids()
+        #fields() # plot in the paper
+        #return
+
+        psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
+
+        Lines.generate_dipole!(psr)
+        Lines.calculate_polarcap!(psr)
+        
+        Sparks.init_sparks1!(psr, rfs=[0.6], num=8)
+        
+        Field.calculate_ff!(psr)
+        Lines.generate_forcefree!(psr; phi=0)
+
+        Plot.polar_cap(psr)
+
 
         println("Bye")
     end
