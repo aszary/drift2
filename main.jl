@@ -158,11 +158,12 @@ module Drift2
         Lines.generate_dipole!(psr)
         Lines.calculate_polarcap!(psr)
         
-        Sparks.init_sparks1!(psr, rfs=[0.6], num=8)
+        Sparks.init_sparks1!(psr, rfs=[90/psr.r_pc], num=8) # circle radius: 90 meters 
         
         Field.calculate_ff!(psr)
         Lines.generate_forcefree!(psr; phi=0)
 
+        #Plot.polar_cap_obsolete(psr)
         Plot.polar_cap(psr)
 
 
