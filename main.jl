@@ -36,11 +36,15 @@ module Drift2
         drift_velocity # at the polar cap
         field_vacuum # magnetic and electric fields calculations
         field_forcefree # magnetic and electric fields calculations
-        function Pulsar(p, pdot, r)
+        """
+        align = 1 -> align rotator
+        align = -1 -> anti-align rotator
+        """
+        function Pulsar(p, pdot, r; align=1)
             r_pc = rdp(p, r)
             r_lc = rlc(p)
             omega = 2 * pi / p # SI units
-            omega_vec = [0, 0, omega] # align rotator
+            omega_vec = [0, 0, align * omega] # align rotator
             #sphere = generate_sphere(r) # GLMakie is the King :D
             return new(p, pdot, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], omega, omega_vec, [], nothing, nothing, nothing, nothing, [], nothing, [], nothing, nothing, nothing, nothing, Field.Vacuum(), Field.ForceFree())
         end
@@ -106,7 +110,9 @@ module Drift2
 
     function fields()
 
-        psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
+        #psr = Pulsar(1, 1e-15, 10e3) # period 1 s, pdot 1e-15, radius 10 km # aligned rotator
+        psr = Pulsar(1, 1e-15, 10e3; align=-1) # period 1 s,  pdot 1e-15, radius 10 km # anti-aligned rotator
+
         #Lines.generate_dipole!(psr)
         #Field.calculate_eint!(psr) # useless?
         #Field.calculate_eint2!(psr) # useless?
@@ -139,9 +145,27 @@ module Drift2
         Field.calculate_GJheat!(psr, psr.field_vacuum; size=1000)
         Field.calculate_ff!(psr)
         Lines.generate_forcefree!(psr; phi=0)
-        Field.calculate_GJheat!(psr, psr.field_forcefree; vacuum=false)
-        Plot.fields(psr, psr.field_vacuum, psr.field_forcefree)
+        Field.calculate_GJheat!(psr, psr.field_forcefree; vacuum=false, size=1000)
+        #Plot.fields0(psr, psr.field_vacuum, psr.field_forcefree) # aligned, but change psr first!
+        Plot.fields(psr, psr.field_vacuum, psr.field_forcefree) # anti-aligned
 
+    end
+
+
+    function polar_cap()
+
+        psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
+
+        Lines.generate_dipole!(psr)
+        Lines.calculate_polarcap!(psr)
+        
+        Sparks.init_sparks1!(psr, rfs=[90/psr.r_pc], num=8) # circle radius: 90 meters 
+        
+        Field.calculate_ff!(psr)
+        Lines.generate_forcefree!(psr; phi=0)
+
+        #Plot.polar_cap_obsolete(psr)
+        Plot.polar_cap(psr) # in the paper
     end
 
 
@@ -150,8 +174,9 @@ module Drift2
         #gradient3D_old()
         #sparks_fullgrid()
         #sparks_smallgrids()
-        #fields() # plot in the paper
-        #return
+        fields() # plot in the paper
+        #polar_cap() # plot in the paper
+        return
 
         psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
 

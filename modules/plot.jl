@@ -3,6 +3,7 @@ module Plot
     using GLMakie
     using CairoMakie
     using LinearAlgebra
+    using ColorSchemes
     #using GeometryBasics # no more Point3f?
     #using Meshes
     GLMakie.activate!()
@@ -716,7 +717,7 @@ module Plot
         #display(fig)
     end
 
-    function fields(psr, field_vacuum, field_forcefree)
+    function fields0(psr, field_vacuum, field_forcefree)
 
         fv = field_vacuum
         ff = field_forcefree
@@ -818,9 +819,164 @@ module Plot
         ylims!(ax2, -30, 30)
 
 
+        filename = "output/fields0.pdf"
+        println(filename)
+        save(filename, fig, pt_per_unit = 1)
+        #display(fig)
+    end
+
+
+    function fields(psr, field_vacuum, field_forcefree)
+
+        fv = field_vacuum
+        ff = field_forcefree
+
+        # normalize fields to stellar radius [in kilometers]
+        for i in 1:size(fv.magnetic, 1)
+            fv.magnetic[i] =  fv.magnetic[i] / fv.beq * 0.5 * psr.r/1e3
+            fv.electric[i] =  fv.electric[i] / fv.beq * 0.5 * psr.r/1e3
+        end
+
+        # normalize fields to stellar radius [in kilometers]
+        for i in 1:size(ff.magnetic, 1)
+            ff.magnetic[i] =  ff.magnetic[i] / ff.beq * 0.5 * psr.r/1e3
+            ff.electric[i] =  ff.electric[i] / ff.beq * 0.5 * psr.r/1e3
+        end
+
+
+        # to play with log scale in heatmaps
+        xv, zv, gjv = [], [], [], []
+        x2v, z2v, gj2v = [], [], [], []
+        for i in 1:size(fv.gj, 1)
+            if fv.gj[i] > 0
+                push!(xv, fv.xgj[i])
+                push!(zv, fv.zgj[i])
+                push!(gjv, log10(fv.gj[i]))
+            else
+                push!(x2v, fv.xgj[i])
+                push!(z2v, fv.zgj[i])
+                push!(gj2v, log10(abs(fv.gj[i])))
+            end
+        end
+
+        # to play with log scale in heatmaps
+        x, z, gj = [], [], [], []
+        x2, z2, gj2 = [], [], [], []
+        for i in 1:size(ff.gj, 1)
+            if ff.gj[i] > 0
+                push!(x, ff.xgj[i])
+                push!(z, ff.zgj[i])
+                push!(gj, log10(ff.gj[i]))
+            else
+                push!(x2, ff.xgj[i])
+                push!(z2, ff.zgj[i])
+                push!(gj2, log10(abs(ff.gj[i])))
+            end
+        end
+        cmap1 = ColorSchemes.Reds
+        cmap2 = ColorSchemes.Blues
+
+        CairoMakie.activate!()
+        # Figure size
+        size_inches = (17/2.54, 6.5/2.54) # 17cm x 6.5cm
+        size_pt = 72 .* size_inches
+        println(size_pt)
+        fig = Figure(resolution = size_pt, fontsize = 8, figure_padding=(0, 5, 0, 5))
+
+        ax1 = Axis(fig[1, 1]; aspect=DataAspect(), xlabel="x (km)", ylabel="z (km)") #, xminorticksvisible=true, yminorticksvisible=true)
+        # charges
+        #heatmap!(ax1, convert(Array{Float64},fv.xgj)/1e3 , convert(Array{Float64},fv.zgj)/1e3, convert(Array{Float64},fv.gj))
+        #heatmap!(ax1, convert(Array{Float64},fv.xgj)/1e3 , convert(Array{Float64},fv.zgj)/1e3, log10.(abs.(convert(Array{Float64},fv.gj)))) # log10
+        hm = heatmap!(ax1, convert(Array{Float64}, xv)/1e3 , convert(Array{Float64},zv)/1e3, convert(Array{Float64},gjv); colormap=cmap2, colorrange=[9, 11])
+        hm2 = heatmap!(ax1, convert(Array{Float64}, x2v)/1e3 , convert(Array{Float64},z2v)/1e3, convert(Array{Float64},gj2v); colormap=cmap1, colorrange=[9, 11])
+        # plot field lines
+        for (i, l) in enumerate(fv.magnetic_lines)
+            if i ==1
+                lines!(ax1, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:royalblue1, linewidth=0.7, label="magnetic lines")
+            else
+                lines!(ax1, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:royalblue1, linewidth=0.7)
+            end
+        end
+        for (i, l) in enumerate(fv.electric_lines)
+            if i == 1
+                lines!(ax1, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:indianred1, linewidth=0.7, label="electric lines")
+            else
+                lines!(ax1, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:indianred1, linewidth=0.7)
+            end
+        end
+        lines!(ax1, Circle(Point2f(0, 0), psr.r/1e3), color=:black, linewidth=1)
+        # neutron star
+        #mesh!(ax1, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
+        # magnetic axis
+        arrows!(ax1, [0], [19], [0], [3], linewidth=0.77, arrowsize=3, color=:black, transparency=true)
+        text!(ax1, 0.5, 19, text=L"\mathbf{\mu}", fontsize=8)
+        # rotation axis
+        arrows!(ax1, [0], [-19], [0], [-3], linewidth=0.77, arrowsize=3, color=:black, transparency=true)
+        text!(ax1, 1, -22.7, text=L"\mathbf{\Omega}", fontsize=8)
+        tightlimits!(ax1)
+        hidexdecorations!(ax1, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        hideydecorations!(ax1, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        text!(ax1, -27, 23, text="a)", fontsize=9)
+        xlims!(ax1, -30, 30)
+        ylims!(ax1, -30, 30)
+        
+
+        ax2 = Axis(fig[1, 4]; aspect=DataAspect(), xlabel="x (km)", ylabel="z (km)") #, xminorticksvisible=true, yminorticksvisible=true)
+        # charges
+        #hm = heatmap!(ax2, convert(Array{Float64},ff.xgj)/1e3 , convert(Array{Float64},ff.zgj)/1e3, convert(Array{Float64},ff.gj)) #, colorrange=[-6732.297190412704, 6732.297190412704])
+        # TODO play with log scale?
+        #last_color = cmap1.colors[end]
+        #cmap2.colors[end] = last_color
+        # :hsv
+        hm = heatmap!(ax2, convert(Array{Float64}, x)/1e3 , convert(Array{Float64},z)/1e3, convert(Array{Float64},gj); colormap=cmap2, colorrange=[9, 11])
+        hm2 = heatmap!(ax2, convert(Array{Float64}, x2)/1e3 , convert(Array{Float64},z2)/1e3, convert(Array{Float64},gj2); colormap=cmap1, colorrange=[9, 11])
+        #hm = heatmap!(ax2, convert(Array{Float64},ff.xgj)/1e3 , convert(Array{Float64},ff.zgj)/1e3, log10.(abs.(convert(Array{Float64},ff.gj)))) #, colorrange=[-6732.297190412704, 6732.297190412704])
+        #println(dump(cb,maxdepth=1))
+        # plot field lines
+        for (i, l) in enumerate(ff.magnetic_lines)
+            if i ==1
+                lines!(ax2, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:royalblue1, linewidth=0.7, label="magnetic lines")
+            else
+                lines!(ax2, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:royalblue1, linewidth=0.7)
+            end
+        end
+        for (i, l) in enumerate(ff.electric_lines)
+            if i == 1
+                lines!(ax2, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:indianred1, linewidth=0.7, label="electric lines")
+            else
+                lines!(ax2, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:indianred1, linewidth=0.7)
+            end
+
+        end
+        # neutron star
+        lines!(ax2, Circle(Point2f(0, 0), psr.r/1e3), color=:black, linewidth=1)
+        #mesh!(ax2, Circle(Point2f(0, 0), psr.r/1e3), color=(:grey, 0.4))
+        # magnetic axis
+        arrows!(ax2, [0], [19], [0], [3], linewidth=0.7, arrowsize=3, color=:black, transparency=true)
+        text!(ax2, 0.5, 19, text=L"\mathbf{\mu}", fontsize=8)
+        # rotation axis
+        arrows!(ax2, [0], [-19], [0], [-3], linewidth=0.7, arrowsize=3, color=:black, transparency=true)
+        text!(ax2, 1, -22.7, text=L"\mathbf{\Omega}", fontsize=8)
+        tightlimits!(ax2)
+        hidexdecorations!(ax2, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        hideydecorations!(ax2, label=false, ticklabels=false, ticks=false, grid=true, minorgrid=true, minorticks=false)
+        text!(ax2, -27, 23, text="b)", fontsize=9)
+        xlims!(ax2, -30, 30)
+        ylims!(ax2, -30, 30)
+
+        cb = Colorbar(fig[1,2], hm, label=L"$\log_{10}{(p^+)}$", vertical=true, width=Relative(0.1))
+        cb = Colorbar(fig[1,3], hm2, label=L"$\log_{10}{(e^-)}$", vertical=true, width=Relative(0.1))
+        colgap!(fig.layout, 1, 0)
+        colgap!(fig.layout, 2, 0)
+        colgap!(fig.layout, 3, 0)
+        colsize!(fig.layout, 2, Relative(0.1)) # does not work?
+        colsize!(fig.layout, 3, Relative(0.1)) # does not work?
+
         filename = "output/fields.pdf"
         println(filename)
         save(filename, fig, pt_per_unit = 1)
+        #save(replace(filename, ".pdf"=>".png"), fig, pt_per_unit=1) # low-res
+        # pdftoppm fields.pdf fields -png -r 300
         #display(fig)
 
     end
