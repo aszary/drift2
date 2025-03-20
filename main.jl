@@ -40,13 +40,13 @@ module Drift2
         align = 1 -> align rotator
         align = -1 -> anti-align rotator
         """
-        function Pulsar(p, pdot, r; align=1)
+        function Pulsar(p, pdot, r; align=1, magnetic_axis=[0, 0, 2*r], rotation_axis=[0, 0, 1.5*r])
             r_pc = rdp(p, r)
             r_lc = rlc(p)
             omega = 2 * pi / p # SI units
             omega_vec = [0, 0, align * omega] # align rotator
             #sphere = generate_sphere(r) # GLMakie is the King :D
-            return new(p, pdot, r, r_pc, r_lc, [0, 0, 2*r], [0, 0, 1.5*r], omega, omega_vec, [], nothing, nothing, nothing, nothing, [], nothing, [], nothing, nothing, nothing, nothing, Field.Vacuum(), Field.ForceFree())
+            return new(p, pdot, r, r_pc, r_lc, magnetic_axis, rotation_axis, omega, omega_vec, [], nothing, nothing, nothing, nothing, [], nothing, [], nothing, nothing, nothing, nothing, Field.Vacuum(), Field.ForceFree())
         end
     end
 
@@ -111,7 +111,8 @@ module Drift2
     function fields()
 
         #psr = Pulsar(1, 1e-15, 10e3) # period 1 s, pdot 1e-15, radius 10 km # aligned rotator
-        psr = Pulsar(1, 1e-15, 10e3; align=-1) # period 1 s,  pdot 1e-15, radius 10 km # anti-aligned rotator
+        #psr = Pulsar(1, 1e-15, 10e3; align=-1) # period 1 s,  pdot 1e-15, radius 10 km # anti-aligned rotator
+        psr = Pulsar(1, 1e-15, 10e3; magnetic_axis = [1*10e3, 0, 0], rotation_axis = [0,0,1.5*10e3]) # period 1 s,  pdot 1e-15, radius 10 km # anti-aligned rotator
 
         #Lines.generate_dipole!(psr)
         #Field.calculate_eint!(psr) # useless?
@@ -128,13 +129,12 @@ module Drift2
         #Plot.vacuum2d(psr)
         
         # 3D here
-        #=
         Field.calculate_ff!(psr)
         Lines.generate_forcefree!(psr)
         Field.calculate_GJ!(psr, field=psr.field_forcefree)
         Plot.field3d(psr, psr.field_forcefree)
-        =#
-
+        return
+        
         #Lines.generate_forcefree!(psr; phi=0)
         #Field.calculate_GJheat!(psr, psr.field_forcefree; vacuum=false)
         #Plot.field2d(psr, psr.field_forcefree)
