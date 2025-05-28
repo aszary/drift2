@@ -1324,5 +1324,19 @@ module Plot
     end
 
 
+    function test(psr)
+
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
+
+        # plot polar cap
+        lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
+
+
+        display(fig)
+    end
+
+
+
+
 
 end  # module Plot

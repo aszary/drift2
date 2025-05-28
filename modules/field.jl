@@ -34,8 +34,8 @@ module Field
         size # number of points to calculate (size*size*size) or size*size for lines
         rmax # radius in meters
         locations # point locations
-        magnetic # global star's magnetic field in vacuum
-        electric # global electric field in vacuum
+        magnetic # global star's magnetic field in force free
+        electric # global electric field in force free
         beq # Magnetic field strength at the stellar equator
         magnetic_lines # magnetic field lines
         electric_lines # electric field lines

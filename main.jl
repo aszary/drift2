@@ -168,13 +168,28 @@ module Drift2
         Plot.polar_cap(psr) # in the paper
     end
 
+    function test()
+        psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
+
+        Lines.calculate_polarcap!(psr)
+
+        # calculate field
+        Field.calculate_ff!(psr)
+        Lines.generate_forcefree!(psr; phi=0)
+
+        #Plot.plot3d(psr)
+        Plot.test(psr)
+
+    end
+
 
     function main()
 
+        test()
         #gradient3D_old()
         #sparks_fullgrid()
         #sparks_smallgrids()
-        fields() # plot in the paper
+        #fields() # plot in the paper
         #polar_cap() # plot in the paper
         return
 
