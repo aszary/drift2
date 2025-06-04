@@ -212,6 +212,7 @@ module Drift2
          Lines.calculate_polarcap!(psr)
          Field.calculate_ff!(psr)
          Lines.generate_forcefree!(psr; step=10, stepsnum=20000, phi=nothing)
+         #Lines.generate_forcefree!(psr;  phi=0) # phi=0 for 2d plot
          Plot.test(psr)
     end
 end

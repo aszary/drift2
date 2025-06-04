@@ -1322,7 +1322,7 @@ module Plot
         #display(fig)
 
     end
-    function test(psr)
+      function test(psr)
 
         #fv = field_vacuum
         #ff = field_forcefree
@@ -1346,5 +1346,7 @@ module Plot
         display(fig)
         
     end
+
+    
 
 end  # module Plot
