@@ -4,7 +4,7 @@ module Plot
     using CairoMakie
     using LinearAlgebra
     using ColorSchemes
-    #using GeometryBasics # no more Point3f?
+    using GeometryBasics # no more Point3f?
     #using Meshes
     GLMakie.activate!()
     #CairoMakie.activate!()
@@ -1329,14 +1329,18 @@ module Plot
         ff = psr.field_forcefree
         fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0,), psr.r), color=:blue, transparency=true)
         
-        mid = Axis(fig[2, 2]; aspect=DataAspect(), xlabel="x (m)", ylabel="y (m)", xminorticksvisible=true, yminorticksvisible=true)
-        hidexdecorations!(mid, label=true, ticklabels=true, ticks=true, grid=true, minorgrid=true, minorticks=true)
-        hideydecorations!(mid, label=true, ticklabels=true, ticks=true, grid=true, minorgrid=true, minorticks=true)
-        hidespines!(mid)
+        #mid = Axis(fig[2, 2]; aspect=DataAspect(), xlabel="x (m)", ylabel="y (m)", xminorticksvisible=true, yminorticksvisible=true)
+        #hidexdecorations!(mid, label=true, ticklabels=true, ticks=true, grid=true, minorgrid=true, minorticks=true)
+        #hideydecorations!(mid, label=true, ticklabels=true, ticks=true, grid=true, minorgrid=true, minorticks=true)
+        #hidespines!(mid)
+
         lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
+
         for (i, l) in enumerate(ff.magnetic_lines)
-            lines!(mid, convert(Array{Float64}, l[1])/1e3, convert(Array{Float64}, l[3])/1e3, color=:black, linewidth=0.1)
+            lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:black, linewidth=0.1)
         end
+        cam = cameracontrols(ax1.scene)
+        cam.eyeposition[] = Point3f0(0, 0, 1)  # zmiana widoku
         display(fig)
         
     end
