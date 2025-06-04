@@ -1312,25 +1312,6 @@ module Plot
         xlims!(xl[1], xl[2])
         ylims!(yl[1], yl[2])
 
-        function test(psr)
-    fig = Figure(resolution=(600, 600))
-    ax1 = Axis3(fig[1, 1]; aspect=(1, 1, 1))
-
-    # Plot the neutron star as a sphere
-    mesh!(ax1, Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
-
-    # Plot the polar cap boundary
-    if psr.pc != nothing
-        lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3], color=:red, linewidth=2)
-    else
-        println("Polar cap data not initialized!")
-    end
-
-    display(fig)
-end
-
-
-
         filename = "output/polar_cap.pdf"
         filename2 = replace(filename, ".pdf"=>".svg")
         println(filename)
@@ -1341,6 +1322,23 @@ end
 
     end
 
+
+
+    function test(psr)
+        fig = Figure(size=(600, 600))
+        ax1 = Axis3(fig[1, 1]; aspect=(1, 1, 1))
+
+        # Plot the neutron star as a sphere
+        mesh!(ax1, Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
+
+        # Plot the polar cap boundary
+        if psr.pc != nothing
+            lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3], color=:red, linewidth=2)
+        else
+            println("Polar cap data not initialized!")
+        end
+        display(fig)
+    end
 
 
 end  # module Plot

@@ -169,14 +169,12 @@ module Drift2
     end
 
     function test()
-    psr = Pulsar(1, 1e-15, 10e3)  # period = 1s, radius = 10 km
-    Lines.calculate_polarcap!(psr)
-    Field.calculate_ff!(psr)
-    Lines.generate_forcefree!(psr; phi=0)  # For 2D polar cap
-
-    Plot.test(psr)  # Call the plot function
-end
-
+        psr = Pulsar(1, 1e-15, 10e3)  # period = 1s, radius = 10 km
+        Lines.calculate_polarcap!(psr)
+        Field.calculate_ff!(psr)
+        Lines.generate_forcefree!(psr; phi=0)  # For 2D polar cap
+        Plot.test(psr)  # Call the plot function
+    end
 
 
     function main()
