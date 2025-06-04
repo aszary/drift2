@@ -77,8 +77,8 @@ module Drift2
         Sparks.create_grid!(psr)
         Sparks.random_sparks_grid!(psr)
         Sparks.calculate_potential!(psr)
-        #Plot.potential3D(psr)
-        Plot.potential2D(psr)
+        Plot.potential3D(psr)
+        #Plot.potential2D(psr)
     end
 
 
@@ -176,6 +176,11 @@ module Drift2
         # calculate field
         Field.calculate_ff!(psr)
         Lines.generate_forcefree!(psr; phi=0)
+
+        Sparks.create_grid!(psr)
+        Sparks.random_sparks_grid!(psr)
+        Sparks.calculate_potential!(psr)
+        #Plot.potential3D(psr)
 
         #Plot.plot3d(psr)
         Plot.test(psr)
