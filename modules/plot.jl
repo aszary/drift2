@@ -1326,8 +1326,6 @@ module Plot
 
     function test(psr)
 
-
-
         # calculate electric potential
         gr = psr.grid
         grid_size = size(gr[1])[1]
@@ -1357,12 +1355,31 @@ module Plot
 
         data = rand(10, 10)
 
-        fig = Figure()
-        ax = Axis3(fig[1, 1])
+        #fig = Figure()
+        #ax = Axis3(fig[1, 1])
 
+        fig, ax, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
         # Wyznacz zakres kolorów raz
-        crange = extrema(data)
+        crange = extrema(v)
 
+        ind = 0
+        for i in 1:grid_size
+            for j in 1:grid_size
+                ind += 1
+                pos = Vec3f0(x[ind], y[ind], z[ind])
+                size = Vec3f0(10.9, 10.9, v[ind])
+                cube = Rect3f(pos, size)
+                
+                mesh!(ax, cube;
+                    #color=z,
+                    colormap=:viridis,
+                    colorrange=crange
+                )
+            end
+        end
+
+        """
+        #=
         for i in 1:size(data, 1), j in 1:size(data, 2)
             z = data[i, j]
             pos = Vec3f0(i, j, 0)
@@ -1375,6 +1392,8 @@ module Plot
                 colorrange=crange
             )
         end
+        =#
+        """
 
         Colorbar(fig[1, 2], colormap=:viridis, limits=crange, label="Wartość")
 
