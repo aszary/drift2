@@ -1340,7 +1340,9 @@ module Plot
             lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:black, linewidth=0.1)
         end
         cam = cameracontrols(ax1.scene)
-        cam.eyeposition[] = Point3f0(0, 0, 1)  # zmiana widoku
+        cam.eyeposition[] = Point3f0(1, 1, 100)  # zmiana widoku- działa zoom pod warunkiem, że sie zzoomuje od góry 
+        #cam.lookat[] = Point3f0(0, 0, 0)             # look at the origin
+
         display(fig)
         
     end
