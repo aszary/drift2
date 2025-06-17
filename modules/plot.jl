@@ -1323,7 +1323,82 @@ module Plot
 
     end
       function test(psr)
+         # calculate electric potential
+        gr = psr.grid
+        grid_size = size(gr[1])[1]
 
+        # data for potential plotting
+        x = Array{Float64}(undef, grid_size * grid_size)
+        y = Array{Float64}(undef, grid_size * grid_size)
+        z = Array{Float64}(undef, grid_size * grid_size)
+        v = Array{Float64}(undef, grid_size * grid_size)
+        ex = Array{Float64}(undef, grid_size * grid_size)
+        ey = Array{Float64}(undef, grid_size * grid_size)
+
+        ind = 0
+        for i in 1:grid_size
+            for j in 1:grid_size
+                ind += 1
+                x[ind] = gr[1][i]
+                y[ind] = gr[2][j]
+                z[ind] = gr[3][i,j]
+                v[ind] = psr.potential[i, j]
+                ex[ind] = psr.electric_field[1][i, j]
+                ey[ind] = psr.electric_field[2][i, j]
+            end
+        end
+
+        # random data and plot
+
+        data = rand(10, 10)
+
+        fig = Figure()
+        ax = Axis3(fig[1, 1])
+
+        # Wyznacz zakres kolorów raz
+        crange = extrema(data)
+
+        for i in 1:size(data, 1), j in 1:size(data, 2)
+            z = data[i, j]
+            pos = Vec3f0(i, j, 0)
+            size = Vec3f0(0.9, 0.9, z)
+            cube = Rect3f(pos, size)
+            
+            mesh!(ax, cube;
+                color=z,
+                colormap=:viridis,
+                colorrange=crange
+            )
+        end
+
+        Colorbar(fig[1, 2], colormap=:viridis, limits=crange, label="Wartość")
+
+        display(fig)
+
+        return
+
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
+        # plot polar cap
+        lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
+
+
+        # plot sparks
+        if psr.sparks != nothing
+            for (i, j) in psr.sparks
+                #scatter!(ax1, gr[1][i], gr[2][j], gr[3][i, j], marker=:xcross, color=:red)
+            end
+        end
+
+        #ze = zeros(size(z))
+
+        #heatmap!(ax1, x, y, v, interpolate=false) #, colorrange=[-155, -135])
+        #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
+        #arrows!(ax1, x, y, ex, ey)
+
+
+        display(fig)
+
+        #=
         #fv = field_vacuum
         #ff = field_forcefree
         ff = psr.field_forcefree
@@ -1345,6 +1420,7 @@ module Plot
 
         display(fig)
         
+        =#
     end
 
     

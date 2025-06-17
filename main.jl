@@ -211,8 +211,8 @@ module Drift2
          psr = Pulsar(1, 1e-15, 10e3)
          Lines.calculate_polarcap!(psr)
          Field.calculate_ff!(psr)
-         Lines.generate_forcefree!(psr; step=10, stepsnum=20000, phi=nothing)
-         #Lines.generate_forcefree!(psr;  phi=0) # phi=0 for 2d plot
+         #Lines.generate_forcefree!(psr; step=10, stepsnum=20000, phi=nothing) #to do robienia linii na wykresie 3d
+         Lines.generate_forcefree!(psr;  phi=0) # phi=0 for 2d plot
          Plot.test(psr)
     end
 end
