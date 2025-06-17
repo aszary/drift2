@@ -1347,33 +1347,36 @@ module Plot
                 ey[ind] = psr.electric_field[2][i, j]
             end
         end
+                # przygotuj siatkę dla heatmapy
+        heatmap_x = reshape(x, grid_size, grid_size)
+        heatmap_y = reshape(y, grid_size, grid_size)
+        heatmap_v = reshape(v, grid_size, grid_size)
+        z_plane = fill(psr.r, size(heatmap_x))  # wysokość - na powierzchni pulsara
 
-        # random data and plot
+        # rysuj heatmapę i pulsar
+        #fig = Figure()
+        #ax = Axis3(fig[1, 1])
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0,), psr.r), color=:blue, transparency=true)
+        surface!(
+            ax1,
+            heatmap_x,
+            heatmap_y,
+            z_plane;
+            color=heatmap_v,
+            colormap=:plasma,
+            shading=false
+        )
 
-        data = rand(10, 10)
+        # kula pulsara
+        mesh!(ax1, Sphere(Point3f0(0, 0, 0), psr.r), color=:blue, transparency=true)
 
-        fig = Figure()
-        ax = Axis3(fig[1, 1])
+        # linia bieguna (opcjonalnie)
+        lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3], color=:white)
 
-        # Wyznacz zakres kolorów raz
-        crange = extrema(data)
-
-        for i in 1:size(data, 1), j in 1:size(data, 2)
-            z = data[i, j]
-            pos = Vec3f0(i, j, 0)
-            size = Vec3f0(0.9, 0.9, z)
-            cube = Rect3f(pos, size)
-            
-            mesh!(ax, cube;
-                color=z,
-                colormap=:viridis,
-                colorrange=crange
-            )
-        end
-
-        Colorbar(fig[1, 2], colormap=:viridis, limits=crange, label="Wartość")
+        Colorbar(fig[1, 2], colormap=:plasma, limits=extrema(heatmap_v), label="Potencjał")
 
         display(fig)
+            
 
         return
 

@@ -168,14 +168,7 @@ module Drift2
         Plot.polar_cap(psr) # in the paper
     end
 
-    function test()
-         # initialize pulsar instance
-        psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
-
-        #Lines.generate_dipole!(psr)
-        Lines.calculate_polarcap!(psr)
-        plot.sparks(psr)
-    end
+    
     
 
 
@@ -214,6 +207,24 @@ module Drift2
          #Lines.generate_forcefree!(psr; step=10, stepsnum=20000, phi=nothing) #to do robienia linii na wykresie 3d
          Lines.generate_forcefree!(psr;  phi=0) # phi=0 for 2d plot
          Plot.test(psr)
+    end
+    function test()
+        psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
+
+        Lines.calculate_polarcap!(psr)
+
+        # calculate field
+        Field.calculate_ff!(psr)
+        Lines.generate_forcefree!(psr; phi=0)
+
+        Sparks.create_grid!(psr)
+        Sparks.random_sparks_grid!(psr)
+        Sparks.calculate_potential!(psr)
+        #Plot.potential3D(psr)
+
+        #Plot.plot3d(psr)
+        Plot.test(psr)
+
     end
 end
 
