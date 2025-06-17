@@ -1326,88 +1326,79 @@ module Plot
     end
 
 
-
     function test(psr)
 
-        if psr.grid === nothing || psr.potential === nothing
-            Sparks.create_grid!(psr)
-            Sparks.random_sparks_grid!(psr)
-            Sparks.calculate_potential!(psr)
+        gr = psr.grid
+        grid_size = size(gr[1])[1]
+
+        # data for potential plotting
+        x = Array{Float64}(undef, grid_size * grid_size)
+        y = Array{Float64}(undef, grid_size * grid_size)
+        z = Array{Float64}(undef, grid_size * grid_size)
+        v = Array{Float64}(undef, grid_size * grid_size)
+        ex = Array{Float64}(undef, grid_size * grid_size)
+        ey = Array{Float64}(undef, grid_size * grid_size)
+
+        ind = 0
+        for i in 1:grid_size
+            for j in 1:grid_size
+                ind += 1
+                x[ind] = gr[1][i]
+                y[ind] = gr[2][j]
+                z[ind] = gr[3][i,j]
+                v[ind] = psr.potential[i, j]
+                ex[ind] = psr.electric_field[1][i, j]
+                ey[ind] = psr.electric_field[2][i, j]
+            end
         end
+
+        # random data and plot
+
+        data = rand(10, 10)
 
         fig = Figure()
-        ax = Axis3(fig[1, 1]; aspect=(1, 1, 1))
+        ax = Axis3(fig[1, 1])
 
-        # Plot neutron star
-        mesh!(ax, Sphere(Point3f(0, 0, 0), psr.r), color=:lightblue, transparency=true)
+        # Wyznacz zakres kolorów raz
+        crange = extrema(data)
 
-        # Plot magnetic field lines
-        for l in psr.lines
-            lines!(ax, l[1], l[2], l[3])
+        for i in 1:size(data, 1), j in 1:size(data, 2)
+            z = data[i, j]
+            pos = Vec3f0(i, j, 0)
+            size = Vec3f0(0.9, 0.9, z)
+            cube = Rect3f(pos, size)
+            
+            mesh!(ax, cube;
+                color=z,
+                colormap=:viridis,
+                colorrange=crange
+            )
         end
 
-        # Extract polar cap grid and potential
-        x = psr.grid[1]
-        y = psr.grid[2]
-        v = psr.potential
-        N = length(x)
-        M = length(y)
+        Colorbar(fig[1, 2], colormap=:viridis, limits=crange, label="Wartość")
 
-        # Initialize arrays
-        positions = Point3f[]
-        v_values = Float32[]  # scalar field for coloring
-        index_map = Dict{Tuple{Int, Int, Int}, Int}()
+        display(fig)
 
-        count = 0
+        return
 
-        for i in 1:N, j in 1:M
-            xi, yj = x[i], y[j]
-            if xi^2 + yj^2 > psr.r_pc^2
-                continue  # outside polar cap
-            end
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
+        # plot polar cap
+        lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
 
-            zi = sqrt(psr.r^2 - xi^2 - yj^2)
-            r_vec = normalize(Vec3f(xi, yj, zi))
-            #bump = 0.01 * v[i, j]
-            bump = 5
 
-            # North cap
-            pos1 = Point3f((psr.r + bump) * r_vec)
-            push!(positions, pos1)
-            push!(v_values, Float32(v[i, j]))
-            index_map[(i, j, 1)] = length(positions)
-
-            # South cap (mirrored)
-            pos2 = Point3f(-(psr.r + bump) * r_vec)
-            push!(positions, pos2)
-            push!(v_values, Float32(v[i, j]))
-            index_map[(i, j, 2)] = length(positions)
-        end
-
-        # Create surface triangles
-        triangles = TriangleFace[]
-        for cap_id in (1, 2)  # north and south caps
-            for i in 1:N-1, j in 1:M-1
-                key1 = (i, j, cap_id)
-                key2 = (i+1, j, cap_id)
-                key3 = (i, j+1, cap_id)
-                key4 = (i+1, j+1, cap_id)
-
-                if all(k -> haskey(index_map, k), (key1, key2, key3, key4))
-                    i1 = index_map[key1]
-                    i2 = index_map[key2]
-                    i3 = index_map[key3]
-                    i4 = index_map[key4]
-
-                    push!(triangles, TriangleFace(i1, i2, i3))
-                    push!(triangles, TriangleFace(i2, i4, i3))
-                end
+        # plot sparks
+        if psr.sparks != nothing
+            for (i, j) in psr.sparks
+                #scatter!(ax1, gr[1][i], gr[2][j], gr[3][i, j], marker=:xcross, color=:red)
             end
         end
 
-        # Create mesh and plot it with colormap
-        mesh_cap = GeometryBasics.Mesh(positions, triangles)
-        mesh!(ax, mesh_cap; color=v_values, colormap=:viridis)
+        #ze = zeros(size(z))
+
+        #heatmap!(ax1, x, y, v, interpolate=false) #, colorrange=[-155, -135])
+        #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
+        #arrows!(ax1, x, y, ex, ey)
+
 
         display(fig)
     end
