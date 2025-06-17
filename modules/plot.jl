@@ -1351,14 +1351,12 @@ module Plot
             end
         end
 
-        # random data and plot
 
-        data = rand(10, 10)
 
         #fig = Figure()
         #ax = Axis3(fig[1, 1])
 
-        fig, ax, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
+        fig, ax, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=false)
         # Wyznacz zakres kolorów raz
         crange = extrema(v)
 
@@ -1367,7 +1365,7 @@ module Plot
             for j in 1:grid_size
                 ind += 1
                 pos = Vec3f0(x[ind], y[ind], z[ind])
-                size = Vec3f0(10.9, 10.9, v[ind])
+                size = Vec3f0(30, 30, v[ind])
                 cube = Rect3f(pos, size)
                 
                 mesh!(ax, cube;
@@ -1377,6 +1375,8 @@ module Plot
                 )
             end
         end
+
+        lines!(ax, psr.pc[1], psr.pc[2], psr.pc[3], color=:red)
 
         """
         #=
