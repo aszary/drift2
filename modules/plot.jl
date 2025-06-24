@@ -445,7 +445,10 @@ module Plot
                 return "$dir/$(filestart)1.$ext"
         end
         files = replace.(files, "$dir/$filestart"=>"", ".$ext"=>"")
-        nums = parse.(Int, files)
+        fi=split.(files, "_")
+        fil=fi[end]
+        println(fil[end])
+        nums = parse.(Int, fil[end])
         num = maximum(nums) + 1
         return "$dir/$filestart$num.$ext"
     end

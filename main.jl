@@ -93,7 +93,7 @@ module Drift2
         #Sparks.init_sparks2!(psr)
         Sparks.init_sparks3!(psr)
 
-        Sparks.create_grid!(psr; size=1000)
+        Sparks.create_grid!(psr; size=100)
         Sparks.calculate_potential_custom!(psr)
         #Plot.potential2D(psr)
         Plot.potential2Dv2(psr)
