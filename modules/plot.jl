@@ -303,7 +303,8 @@ module Plot
         #heatmap!(fig, x, y, v, interpolate=false) #, colorrange=[-155, -135])
 
         fig, ax1, p = heatmap(x, y, v, interpolate=false) #, colorrange=[-155, -135])
-        resize!(fig, (700, 700)) # changes resolution
+        fig = Figure(resolution = (700, 700))
+        #resize!(fig, (700, 700)) # changes resolution
         #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
 
         #arrows!(x, y, ex, ey, color=:white)
@@ -1426,7 +1427,7 @@ module Plot
             lines!(ax1, convert(Array{Float64}, l[1]), convert(Array{Float64}, l[2]), convert(Array{Float64}, l[3]), color=:black, linewidth=0.1)
         end
         cam = cameracontrols(ax1.scene)
-        cam.eyeposition[] = Point3f0(1, 1, 100)  # zmiana widoku- działa zoom pod warunkiem, że sie zzoomuje od góry 
+        cam.eyeposition[] = Point3f0(1, 1, 100)  # change of the camera position works properly if you zoom from the top of the pulsar 
         #cam.lookat[] = Point3f0(0, 0, 0)             # look at the origin
 
         display(fig)

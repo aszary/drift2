@@ -173,10 +173,10 @@ module Drift2
 
 
     function main()
-        test()
+        #test()
         #gradient3D_old()
         #sparks_fullgrid()
-        #sparks_smallgrids()
+        sparks_smallgrids()
         #fields() # plot in the paper
         #polar_cap() # plot in the paper
         return
