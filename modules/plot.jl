@@ -1348,28 +1348,25 @@ module Plot
                 ey[ind] = psr.electric_field[2][i, j]
             end
         end
-                # przygotuj siatkę dla heatmapy
-        heatmap_x = reshape(x, grid_size, grid_size)
+                #prepare heatmap grid
+        heatmap_x = reshape(x, grid_size, grid_size)        
         heatmap_y = reshape(y, grid_size, grid_size)
         heatmap_v = reshape(v, grid_size, grid_size)
-        #z_plane = fill(psr.r, size(heatmap_x))  # wysokość - na powierzchni pulsara
-
-        z_plane = similar(heatmap_x)  # ta sama wielkość i typ
+        z_plane = similar(heatmap_x) 
 
         for i in 1:size(heatmap_x, 1), j in 1:size(heatmap_x, 2)
             x_val = heatmap_x[i, j]
             y_val = heatmap_y[i, j]
             val = psr.r^2 - x_val^2 - y_val^2
             if val >= 0
-                z_plane[i, j] = sqrt(val)   # górna półkula
+                z_plane[i, j] = sqrt(val)   # check if its north pole
             else
-                z_plane[i, j] = NaN         # poza sferą
+                z_plane[i, j] = NaN         # check if its isnt on the sphere
             end
         end
-        # rysuj heatmapę i pulsar
-        #fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0,), psr.r), color=:blue, transparency=true)
-        fig = Figure()
-        ax1 = Axis3(fig[1, 1])
+        
+        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0,), psr.r), color=:blue, transparency=true) #generate on the surface of the pulsa
+        
         surface!(
             ax1,
             heatmap_x,
@@ -1380,12 +1377,12 @@ module Plot
             shading=false
         )
         
-        # kula pulsara
-        #mesh!(ax1, Sphere(Point3f0(0, 0, 0), psr.r), color=:blue, transparency=true)
-
-        # linia bieguna (opcjonalnie)
-        
+        # puslar drawing
+        mesh!(ax1, Sphere(Point3f0(0, 0, 0), psr.r), color=:blue, transparency=true)
         lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3], color=:white)
+
+        #=
+        
         if psr.sparks != nothing
             for sp in psr.sparks
                  i, j = sp
@@ -1395,6 +1392,13 @@ module Plot
                 scatter!(ax1, [x_sp], [y_sp], [z_sp], marker=:xcross, color=:red)
             end
         end
+        =#
+        if psr.sparks != nothing
+            for sp in psr.sparks
+            x_sp, y_sp, z_sp = sp
+            scatter!(ax1, [x_sp], [y_sp], [z_sp], marker=:xcross, color=:red)
+            end
+        end
         Colorbar(fig[1, 2], colormap=:plasma, limits=extrema(heatmap_v), label="Potencjał")
 
         display(fig)
@@ -1402,28 +1406,10 @@ module Plot
 
         return
 
-        #fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
-        # plot polar cap
-        #lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
-
-        
-        # plot sparks
-        if psr.sparks != nothing
-            for (i, j) in psr.sparks
-                #scatter!(ax1, gr[1][i], gr[2][j], gr[3][i, j], marker=:xcross, color=:red)
-            end
-        end
-
-        #ze = zeros(size(z))
-
-        #heatmap!(ax1, x, y, v, interpolate=false) #, colorrange=[-155, -135])
-        #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
-        #arrows!(ax1, x, y, ex, ey)
-
 
         display(fig)
 
-        #=
+        #= #whole section is about drawing magnetic field lines
         #fv = field_vacuum
         #ff = field_forcefree
         ff = psr.field_forcefree

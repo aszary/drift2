@@ -218,8 +218,8 @@ module Drift2
         Lines.generate_forcefree!(psr; phi=0)
 
         Sparks.create_grid!(psr)
-        Sparks.random_sparks_grid!(psr)
-        Sparks.calculate_potential!(psr)
+        Sparks.random_sparks!(psr)
+        Sparks.calculate_potential_custom!(psr)
         #Plot.potential3D(psr)
 
         #Plot.plot3d(psr)
