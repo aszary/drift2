@@ -305,17 +305,18 @@ module Plot
         #heatmap!(fig, x, y, v, interpolate=false) #, colorrange=[-155, -135])
 
         fig, ax1, p = heatmap(x, y, v, interpolate=false) #, colorrange=[-155, -135])
-        resize!(fig, (700, 700)) # changes resolution
+        fig = Figure(resolution = (700, 700)) # changes resolution
+        #resize!(fig, (700, 700)) # changes resolution
         #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
 
         #arrows!(x, y, ex, ey, color=:white)
         #arrows!(x, y, vx, vy, color=:white)
 
         # get last file
-        filename = get_newfilename("output", "potential2D_", "png")
-        println("Filename: $filename")
+        #filename = get_newfilename("output", "potential2D_", "png")
+        #println("Filename: $filename")
 
-        save(filename, fig)
+        #save(filename, fig)
         #save("output/potential2D.svg",fig) # does not work
         #save("output/potential2D.pdf",fig) # does not work
         display(fig)
@@ -1335,11 +1336,13 @@ module Plot
             Sparks.calculate_potential!(psr)
         end
 
-        fig = Figure()
-        ax = Axis3(fig[1, 1]; aspect=(1, 1, 1))
+        #fig = Figure()
+        #ax = Axis3(fig[1, 1]; aspect=(1, 1, 1))
+
 
         # Plot neutron star
-        mesh!(ax, Sphere(Point3f(0, 0, 0), psr.r), color=:lightblue, transparency=true)
+        fig, ax, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=false)
+        #mesh!(ax, Sphere(Point3f(0, 0, 0), psr.r), color=:lightblue, transparency=true)
 
         # Plot magnetic field lines
         for l in psr.lines
@@ -1368,8 +1371,8 @@ module Plot
 
             zi = sqrt(psr.r^2 - xi^2 - yj^2)
             r_vec = normalize(Vec3f(xi, yj, zi))
-            #bump = 0.01 * v[i, j]
-            bump = 5
+            bump = 0.01 * v[i, j]
+            #bump = 100
 
             # North cap
             pos1 = Point3f((psr.r + bump) * r_vec)
@@ -1402,6 +1405,149 @@ module Plot
                     push!(triangles, TriangleFace(i1, i2, i3))
                     push!(triangles, TriangleFace(i2, i4, i3))
                 end
+            end
+        end
+
+        # Create mesh and plot it with colormap
+        mesh_cap = GeometryBasics.Mesh(positions, triangles)
+        mesh!(ax, mesh_cap; color=v_values, colormap=:viridis)
+
+        display(fig)
+    end
+
+    function test3(psr)
+
+        # Ensure data exists
+        if psr.grid === nothing || psr.potential === nothing
+            Sparks.create_grid!(psr)
+            Sparks.random_sparks_grid!(psr)
+            Sparks.calculate_potential!(psr)
+        end
+
+        # Create figure and star
+        fig, ax, _ = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue)
+
+        # Plot magnetic field lines
+        for l in psr.lines
+            lines!(ax, l[1], l[2], l[3])
+        end
+
+        # Extract grid and potential
+        x, y, v = psr.grid[1], psr.grid[2], psr.potential
+        N, M = length(x), length(y)
+        positions = Point3f[]; v_values = Float32[]; index_map = Dict{NTuple{3, Int}, Int}()
+
+        for i in 1:N, j in 1:M
+            xi, yj = x[i], y[j]
+            if xi^2 + yj^2 > psr.r_pc^2; continue; end
+            zi = sqrt(psr.r^2 - xi^2 - yj^2)
+            r_vec = normalize(Vec3f(xi, yj, zi))
+            bump = 0.01f0 * v[i, j]
+
+            # Both caps
+            for cap in (1, -1)
+                pt = Point3f(cap * (psr.r + bump) * r_vec)
+                push!(positions, pt)
+                push!(v_values, Float32(v[i, j]))
+                index_map[(i, j, ifelse(cap == 1, 1, 2))] = length(positions)
+            end
+        end
+
+        # Build triangle faces
+        triangles = TriangleFace[]
+        for cap_id in (1, 2), i in 1:N-1, j in 1:M-1
+            keys = [(i,j,cap_id), (i+1,j,cap_id), (i,j+1,cap_id), (i+1,j+1,cap_id)]
+            if all(k -> haskey(index_map, k), keys)
+                i1, i2, i3, i4 = index_map[keys[1]], index_map[keys[2]], index_map[keys[3]], index_map[keys[4]]
+                push!(triangles, TriangleFace(i1, i2, i3), TriangleFace(i2, i4, i3))
+            end
+        end
+
+        # Plot polar cap mesh
+        mesh_cap = GeometryBasics.Mesh(positions, triangles)
+        mesh!(ax, mesh_cap; color=v_values, colormap=:viridis)
+
+        # 3D X marks at spark centers
+        if psr.sparks !== nothing
+            sparks3d = [
+                Point3f(psr.r * normalize(Vec3f(sp[1], sp[2], sqrt(psr.r^2 - sp[1]^2 - sp[2]^2))))
+                for sp in psr.sparks
+                if sp[1]^2 + sp[2]^2 <= psr.r_pc^2
+            ]
+
+            scatter!(ax, sparks3d; color=:black, marker=:xcross, markersize=30)
+        end
+
+
+        display(fig)
+    end
+
+
+    function test2(psr)
+        
+        if psr.grid === nothing || psr.potential === nothing
+            Sparks.create_grid!(psr)
+            Sparks.random_sparks_grid!(psr)
+            Sparks.calculate_potential!(psr)
+        end
+
+        #fig = Figure()
+        #ax = Axis3(fig[1, 1]; aspect=(1, 1, 1))
+
+        # Plot neutron star
+        #mesh!(ax, Sphere(Point3f(0, 0, 0), psr.r), color=:lightblue, transparency=true)
+        fig, ax, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=false)
+        # Plot magnetic field lines
+        for l in psr.lines
+            lines!(ax, l[1], l[2], l[3])
+        end
+
+        # Extract polar cap grid and potential
+        x = psr.grid[1]
+        y = psr.grid[2]
+        v = psr.potential
+        N = length(x)
+        M = length(y)
+
+        # Initialize arrays
+        positions = Point3f[]
+        v_values = Float32[]  # scalar field for coloring
+        index_map = Dict{Tuple{Int, Int}, Int}()
+        count = 0
+
+        for i in 1:N, j in 1:M
+            xi, yj = x[i], y[j]
+            if xi^2 + yj^2 > psr.r_pc^2
+                continue  # skip outside cap
+            end
+
+            # Compute z on star surface
+            zi = sqrt(psr.r^2 - xi^2 - yj^2)
+
+            # Radial unit vector
+            r_vec = normalize(Vec3f(xi, yj, zi))
+
+            # Add bump based on potential
+            bump = 0.01 * v[i, j]
+            pos = Point3f((psr.r + bump) * r_vec)
+
+            push!(positions, pos)
+            push!(v_values, Float32(v[i, j]))
+            count += 1
+            index_map[(i, j)] = count
+        end
+
+        # Create surface triangles
+        triangles = TriangleFace[]
+        for i in 1:N-1, j in 1:M-1
+            if haskey(index_map, (i, j)) && haskey(index_map, (i+1, j)) &&
+            haskey(index_map, (i, j+1)) && haskey(index_map, (i+1, j+1))
+                i1 = index_map[(i, j)]
+                i2 = index_map[(i+1, j)]
+                i3 = index_map[(i, j+1)]
+                i4 = index_map[(i+1, j+1)]
+                push!(triangles, TriangleFace(i1, i2, i3))
+                push!(triangles, TriangleFace(i2, i4, i3))
             end
         end
 

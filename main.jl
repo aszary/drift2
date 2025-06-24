@@ -173,7 +173,7 @@ module Drift2
         Lines.calculate_polarcap!(psr)
         Field.calculate_ff!(psr)
         Lines.generate_forcefree!(psr; phi=0)  # For 2D polar cap
-        Plot.test(psr)  # Call the plot function
+        Plot.test3(psr)  # Call the plot function
     end
 
 
