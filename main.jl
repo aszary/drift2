@@ -210,7 +210,7 @@ module Drift2
     end
     function test()
         psr = Pulsar(1, 1e-15, 10e3) # period 1 s, radius 10 km
-
+        # test
         Lines.calculate_polarcap!(psr)
 
         # calculate field
