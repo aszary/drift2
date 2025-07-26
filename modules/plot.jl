@@ -303,7 +303,8 @@ module Plot
         #heatmap!(fig, x, y, v, interpolate=false) #, colorrange=[-155, -135])
 
         fig, ax1, p = heatmap(x, y, v, interpolate=false) #, colorrange=[-155, -135])
-        resize!(fig, (700, 700)) # changes resolution
+        #resize!(fig, (700, 700)) # changes resolution
+        resize_to_layout!(fig)
         #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
 
         #arrows!(x, y, ex, ey, color=:white)

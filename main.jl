@@ -93,7 +93,7 @@ module Drift2
         #Sparks.init_sparks2!(psr)
         Sparks.init_sparks3!(psr)
 
-        Sparks.create_grid!(psr; size=1000)
+        Sparks.create_grid!(psr; size=100)
         Sparks.calculate_potential_custom!(psr)
         #Plot.potential2D(psr)
         Plot.potential2Dv2(psr)
@@ -104,7 +104,7 @@ module Drift2
         #Plot.sparks(psr)
         Sparks.simulate!(psr)
         Plot.simulation2d(psr)
-        #Plot.simulation3d(psr)
+        Plot.simulation3d(psr)
     end
 
 
@@ -191,9 +191,9 @@ module Drift2
 
     function main()
         #test_andrzej()
-        gradient3D_old()
+        #gradient3D_old()
         #sparks_fullgrid()
-        #sparks_smallgrids()
+        sparks_smallgrids()
         #fields() # plot in the paper
         #polar_cap() # plot in the paper
         return
