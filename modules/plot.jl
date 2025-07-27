@@ -1352,13 +1352,11 @@ module Plot
             end
         end
 
-
-
         #fig = Figure()
         #ax = Axis3(fig[1, 1])
 
         fig, ax, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=false)
-        # Wyznacz zakres kolorów raz
+        # set color range 
         crange = extrema(v)
 
         ind = 0
@@ -1379,49 +1377,10 @@ module Plot
 
         lines!(ax, psr.pc[1], psr.pc[2], psr.pc[3], color=:red)
 
-        """
-        #=
-        for i in 1:size(data, 1), j in 1:size(data, 2)
-            z = data[i, j]
-            pos = Vec3f0(i, j, 0)
-            size = Vec3f0(0.9, 0.9, z)
-            cube = Rect3f(pos, size)
-            
-            mesh!(ax, cube;
-                color=z,
-                colormap=:viridis,
-                colorrange=crange
-            )
-        end
-        =#
-        """
-
         Colorbar(fig[1, 2], colormap=:viridis, limits=crange, label="Wartość")
 
         display(fig)
 
-        return
-
-        fig, ax1, p = mesh(Sphere(Point3f(0, 0, 0), psr.r), color=:blue, transparency=true)
-        # plot polar cap
-        lines!(ax1, psr.pc[1], psr.pc[2], psr.pc[3])
-
-
-        # plot sparks
-        if psr.sparks != nothing
-            for (i, j) in psr.sparks
-                #scatter!(ax1, gr[1][i], gr[2][j], gr[3][i, j], marker=:xcross, color=:red)
-            end
-        end
-
-        #ze = zeros(size(z))
-
-        #heatmap!(ax1, x, y, v, interpolate=false) #, colorrange=[-155, -135])
-        #hm = meshscatter!(ax1, x, y, ze; markersize=1.25, color=v, transparency=false)
-        #arrows!(ax1, x, y, ex, ey)
-
-
-        display(fig)
     end
 
 
